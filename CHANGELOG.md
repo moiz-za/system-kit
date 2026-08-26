@@ -3,6 +3,27 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] — 2026-08-26
+
+### Added
+
+- **Worked example** (`examples/example-START_HERE.md`) — fully filled-in entry point
+  showing expected detail level after initialization
+- **Troubleshooting appendix** in `SETUP_PROMPT.md` — ten documented initialization
+  mistakes with correct behaviors
+- **Edge-case guidance** in `SETUP_PROMPT.md` Step 2 — empty/greenfield projects,
+  monorepos, and polyglot stacks
+- Repository published at github.com/moiz-za/system-kit
+
+### Fixed
+
+- Case-mismatched filename references (`setup-prompt.md` → `SETUP_PROMPT.md`)
+- Domain-specific reference removed from failure-classes (domain-neutral requirement)
+- Inconsistent heading style across failure classes 6 and 12
+- CHANGELOG pattern count corrected; cost-zero operation pattern now listed
+- Tool-specific credential path genericized in START_HERE template
+- README file tree updated to match actual structure (cost-zero pattern, CHECKPOINTS)
+
 ## [1.0.0] — 2026-08-26
 
 ### Added

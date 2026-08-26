@@ -50,6 +50,17 @@ Also check:
 - Is there a pre-commit hook configured?
 - What's the git remote / hosting situation?
 
+### Special project shapes
+
+- **Empty / greenfield project:** skip deep scanning; ask the owner what
+  stack is planned and record it as provisional. Build the system anyway —
+  governance works from day zero.
+- **Monorepo:** treat the repo as ONE governed territory. Ask whether each
+  package/app gets its own task queue or shares one. Default: one shared
+  TASKS.md with a `Package` column added. Mutexes stay global to the repo.
+- **Polyglot:** list every language's verification commands separately in
+  START_HERE §4. Never merge them into one ambiguous command chain.
+
 ## STEP 3 — OWNER QUESTIONS
 
 Ask the user these questions (plain language, one at a time if needed):
@@ -151,3 +162,23 @@ After owner confirms:
 - If existing docs conflict with templates, ASK the owner which wins
 - Suggest improvements you notice but NEVER auto-implement them
 - Record everything in the build log as you go
+
+---
+
+## APPENDIX — TROUBLESHOOTING: COMMON INITIALIZATION MISTAKES
+
+Known failure modes during setup. If you catch yourself doing any of these,
+stop and correct before proceeding.
+
+| # | Mistake | Why it fails | Correct behavior |
+|---|---|---|---|
+| 1 | Filling `[PROJECT NAME]` placeholders with invented names | Owner's actual name never asked; docs ship wrong | Ask in Step 3; use the owner's exact name |
+| 2 | Inventing domain laws instead of asking | Fabricated rules bind every future thread wrongly | Domain laws come ONLY from owner answers |
+| 3 | Skipping the existing-docs integration manifest | Old docs orphaned; institutional memory lost | Catalog EVERY file found; present manifest |
+| 4 | Deleting "duplicate" files during integration | Destroys history; violates append-only spirit | Move + merge only; originals preserved |
+| 5 | Writing verification commands you never ran | Broken gate blocks every future commit | Run each command once; record real output status |
+| 6 | Building all files silently, then dumping them at once | Owner can't course-correct mid-setup | Present after Step 5 confirmation gate |
+| 7 | Weakening the three-mutex model to one lock ("simplification") | Docs-only threads serialize behind code work | Preserve CODE/LEDGER/DB-CF separation always |
+| 8 | Copying example content from this kit into live files | Placeholder/example text pollutes the real system | Templates are structure; fill from THIS project's reality |
+| 9 | Reading credential files to "check provider health" | Secrets enter LLM context | Use key-safe tooling; sanitized results only |
+| 10 | Marking the system LIVE without owner confirmation | Unvalidated governance becomes binding law | Step 5 confirmation is mandatory, not optional |

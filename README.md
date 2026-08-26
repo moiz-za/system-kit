@@ -44,6 +44,7 @@ Paste the contents of `SETUP_PROMPT.md` as your first message.
 ### 3. Follow the initialization
 
 The agent will scan your project, ask questions, build everything customized to your stack.
+See a [completed START_HERE.md](examples/example-START_HERE.md) for what you end up with.
 
 ### 4. Every future thread starts here
 
@@ -88,6 +89,9 @@ system-kit/
 │   ├── THREADS.md             ← Concurrency registry template
 │   ├── workflow/              ← Task board, build log, pending decisions
 │   └── CHECKPOINTS/           ← Resume checkpoint format
+│
+├── examples/                  ← Worked examples of completed files
+│   └── example-START_HERE.md  ← What a filled-in entry point looks like
 │
 └── patterns/                  ← Proven patterns with failure evidence
     ├── concurrency.md         ← Mutex model reference
