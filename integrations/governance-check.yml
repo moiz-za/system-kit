@@ -16,23 +16,21 @@ jobs:
       - name: Relative markdown links resolve
         run: |
           fail=0
-          # Each match looks like: <file>:<line>:<link> where <link> is relative
-          # to <file>'s directory. Split on ':' and ' ' to get file, line, target.
-          while IFS=': ' read -r file line target; do
+          # grep -o emits one link match per line as <file>:<line>:](<target>).
+          # Rewrite each to space-separated "<file> <line> <target>" so we can
+          # resolve <target> relative to <file>'s directory.
+          while IFS=' ' read -r file line target; do
             case "$target" in
               '' ) continue ;;
-            esac
-            case "$target" in
-              \#*) continue ;;          # in-file anchor
-              http*) continue ;;        # external URL
+              '#'* ) continue ;;     # in-file anchor
+              'http'* ) continue ;;  # absolute URL
             esac
             if [ ! -e "$(dirname "$file")/$target" ]; then
               echo "BROKEN LINK: $file:$line -> $target"
               fail=1
             fi
           done < <(grep -rnoE '\]\(([^)]+)\)' --include='*.md' . \
-            | sed -E 's/:([0-9]+):.*\]\(([^)]+)\).*/:\1 \2/' \
-            | grep -v '^$')
+            | sed -E 's#^(.+):([0-9]+):\]\((.+)\)$#\1 \2 \3#')
           exit $fail
 
       - name: No unresolved template placeholders

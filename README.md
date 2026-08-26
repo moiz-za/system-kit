@@ -11,7 +11,7 @@ Built from real production incidents across 26+ concurrent AI-agent sessions.
 Zero code collisions when followed. Nothing here is theoretical.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.3.2-blue)
+![Version](https://img.shields.io/badge/version-1.3.3-blue)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
 ---

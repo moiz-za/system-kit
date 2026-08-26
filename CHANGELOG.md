@@ -3,6 +3,24 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.3] — 2026-08-26
+
+### Fixed
+
+- **CI link-checker was dropping the filename** — the `sed` in
+  `integrations/governance-check.yml` emitted `:line target` (no file) and
+  mangled `http(s)` targets so the absolute-URL guard never fired, making the
+  check report every external link as broken. Rewritten to emit
+  space-separated `<file> <line> <target>`; verified against the repo.
+- **CONTRIBUTING contradiction**: "no tool-specific integrations" now carves out
+  the explicitly-optional `integrations/` folder, aligning the rules with the
+  GitHub Actions example shipped since 1.3.0. Core `templates/` + `patterns/`
+  remain methodology-only.
+- Empty-folder validation refreshed (was stale since v1.3.1 edits); claim
+  marked precise: tested with `git init`-first greenfield, not the literal
+  no-git case.
+- `integrations/README.md` header note aligned with the CONTRIBUTING carve-out.
+
 ## [1.3.2] — 2026-08-26
 
 ### Fixed

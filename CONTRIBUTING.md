@@ -13,7 +13,8 @@ the need for every pattern in it. Your hard-won lessons are welcome here.
 ## What we don't accept
 
 - Domain-specific rules (this is a universal kit — adapt per project after deployment)
-- Tool-specific integrations (keep it methodology, not implementation)
+- Tool-specific integrations in core templates/patterns (keep them methodology,
+  not implementation — optional tool glue lives separately in `integrations/`)
 - Changes that weaken security isolation or verification standards
 
 ## How to contribute

@@ -1,8 +1,9 @@
 # Integrations — Optional, Tool-Specific Extras
 
-> The core kit is deliberately methodology-only (see CONTRIBUTING.md).
-> Everything in this folder is **optional** glue for specific tools.
-> Nothing here is required to run System Kit.
+> The core kit (`templates/`, `patterns/`, `SETUP_PROMPT.md`) is deliberately
+> methodology-only per CONTRIBUTING.md. Everything in this folder is **optional**
+> glue for specific tools. Nothing here is required to run System Kit, and new
+> integrations live only here — not in the core templates.
 
 ## Contents
 
