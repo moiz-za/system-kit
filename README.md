@@ -3,7 +3,7 @@
 **Portable multi-thread governance infrastructure for AI-agent development teams.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
 Copy one folder into any project. Give any AI agent thread the setup prompt.
