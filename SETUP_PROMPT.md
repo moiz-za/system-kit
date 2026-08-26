@@ -87,6 +87,10 @@ Record ALL answers — they become the project's domain laws.
 
 Create the following structure in the documentation area:
 
+> If the project has no documentation area yet (empty/greenfield project),
+> create one at `docs/` in the repository root and say so explicitly when
+> presenting the system. Never scatter governance files outside one folder.
+
 ```
 [DOCS-FOLDER]/
 ├── START_HERE.md          ← Entry point: model check → task claim → work
