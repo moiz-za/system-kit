@@ -1,53 +1,17 @@
 # START_HERE.md — [PROJECT NAME] Entry Point
 
 > **THE single entry point for every new thread.**
-> Read this → run model check → claim a task → work it → close it.
+> Read this → claim a task → work it → close it.
 > If your target is locked or conflicting → notify, don't start.
 
 ---
 
-## §0 LIVE MODEL SELECTION
+## OPTIONAL — MULTI-PROVIDER MODEL SELECTION
 
-Before claiming any task, verify which AI models are currently alive and routable.
-
-### Procedure
-
-1. Read your AI agent tool's configured credentials (auth/config file or keychain)
-   to identify which AI providers have keys configured
-2. For EACH keyed provider, query its live `/models` endpoint (not cache):
-   ```bash
-   curl -s https://{provider-base-url}/models \
-     -H "Authorization: Bearer {key}"
-   ```
-3. Separate results into FREE models and PAID models
-4. For top FREE candidates (max 3): send one tiny chat probe (~10 tokens,
-   e.g., "Reply with exactly: OK") to verify routability
-5. Eliminate any model that returns: errors, empty content, timeouts, or
-   region-blocked responses
-6. Rank survivors by: speed × context window × coding ability
-7. PAID models are listed last as guaranteed fallback — never probed
-8. Present recommendation with alternatives
-
-### Rules
-
-- Probe only FREE models; paid models are assumed always-available
-- One probe per candidate model — no repeated hammering
-- If a provider hits its daily limit or underperforms: suggest switching
-  immediately without showing quota counters or internal metrics
-- Handle all credentials internally — never echo keys in output
-- Track daily probe count internally if the provider enforces rate limits;
-  adjust probing frequency accordingly
-
-### Output format
-
-```
-✅ RECOMMENDED: {model-id} ({provider}) — {context} ctx · {latency}s · healthy
-✅ {model-id} ({provider}) — {context} ctx · {latency}s · healthy
-⚠️ {model-id} ({provider}) — degraded: {reason}
-❌ {model-id} — dead: {reason}
-
-Guaranteed fallback: {paid-provider} (paid — always available)
-```
+If this project runs multiple AI providers on rotating free-tier catalogs,
+apply System Kit's **Model Rotation pattern** at every session start:
+live `/models` probing, tiny health checks per candidate, ranked survivors,
+paid fallback last. Skip entirely if you use one paid provider.
 
 ---
 

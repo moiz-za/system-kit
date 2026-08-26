@@ -14,9 +14,9 @@
 
 ---
 
-## §0 LIVE MODEL SELECTION
+## OPTIONAL — MULTI-PROVIDER MODEL SELECTION
 
-*Completed at every session start per protocol. Last sweep: 2026-08-26.*
+*This project runs free-tier rotation, so Model Rotation applies. Last sweep: 2026-08-26.*
 
 ```
 ✅ RECOMMENDED: qwen3-coder-480b (OpenRouter :free) — 262k ctx · 1.8s · healthy

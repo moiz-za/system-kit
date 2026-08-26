@@ -93,7 +93,7 @@ Create the following structure in the documentation area:
 
 ```
 [DOCS-FOLDER]/
-├── START_HERE.md          ← Entry point: model check → task claim → work
+├── START_HERE.md          ← Entry point: task claim → work → close out
 ├── AGENTS.md              ← Laws: universal + domain-specific + amendment log
 ├── THREADS.md             ← Live concurrency registry
 ├── workflow/

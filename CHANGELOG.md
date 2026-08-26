@@ -3,6 +3,16 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.1] — 2026-08-26
+
+### Changed
+
+- **Model selection extracted from core template** — START_HERE no longer
+  mandates live model probing as a universal step. Replaced with an optional
+  pointer to the Model Rotation pattern; single-paid-provider projects skip it.
+  Rationale: multi-provider free-tier assumption violated the kit's
+  domain-neutrality principle.
+
 ## [1.3.0] — 2026-08-26
 
 ### Added

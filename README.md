@@ -11,7 +11,7 @@ Built from real production incidents across 26+ concurrent AI-agent sessions.
 Zero code collisions when followed. Nothing here is theoretical.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.3.0-blue)
+![Version](https://img.shields.io/badge/version-1.3.1-blue)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
 ---
@@ -75,7 +75,7 @@ what "done" looks like before you start.
 | Task queue with claim/lock/release | Single entry point + priority queue + conflict detection |
 | Verification gates | Local-first testing, five-step order, owner verifies last |
 | Institutional memory | Append-only ledgers + checkpoint/resume system |
-| Model health checking | Live availability probing before every session |
+| Optional model rotation | Live availability probing for rotating free-tier catalogs |
 | Push discipline | Ledger currency required; owner-gated deployments |
 | Key isolation | Credentials handled internally; never exposed to agents or logs |
 | Plain-language owner gate | Decisions in simple English; owner interrupted only when needed |
