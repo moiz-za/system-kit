@@ -11,7 +11,7 @@ Built from real production incidents across 26+ concurrent AI-agent sessions.
 Zero code collisions when followed. Nothing here is theoretical.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.2.0-blue)
+![Version](https://img.shields.io/badge/version-1.3.0-blue)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
 ---
@@ -92,6 +92,7 @@ Each pattern documents the real failure it prevents:
 - [Model Rotation](patterns/model-rotation.md) — surviving weekly free-catalog churn
 - [Prompt Injection Defense](patterns/prompt-injection-defense.md) — containing untrusted data in agent contexts
 - [Context Window Management](patterns/context-window-management.md) — checkpoint-before-compaction discipline
+- [Worktree Parallel Coding](patterns/worktree-parallel.md) — extending the mutex model to true simultaneous edits
 
 ## Who It's For
 
@@ -132,7 +133,8 @@ own them forever.
 | [`SETUP_PROMPT.md`](SETUP_PROMPT.md) | Paste into a new thread → initializes governance (+ troubleshooting appendix) |
 | [`templates/`](templates/) | Copy into your project: entry point, laws, thread registry, workflow boards |
 | [`patterns/`](patterns/) | Read-only references explaining why each rule exists |
-| [`examples/`](examples/) | Worked example of a fully initialized system |
+| [`examples/`](examples/) | Worked examples: initialized START_HERE and a live THREADS registry |
+| [`integrations/`](integrations/) | Optional extras — e.g., GitHub Actions governance-compliance check |
 
 ## Contributing
 

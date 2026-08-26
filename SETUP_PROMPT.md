@@ -60,6 +60,15 @@ Also check:
   TASKS.md with a `Package` column added. Mutexes stay global to the repo.
 - **Polyglot:** list every language's verification commands separately in
   START_HERE §4. Never merge them into one ambiguous command chain.
+- **No test framework configured:** flag this to the owner as a governance
+  gap — Law 2 (verify before commit) is unenforceable without one. Suggest
+  the language's standard minimal option (one suggestion, not a survey),
+  and record "verification = lint + build only" in START_HERE §4 until a
+  test suite exists. Do NOT install anything without owner approval.
+- **No git repository yet:** flag as a blocking prerequisite. The mutex
+  model's clean-tree handoff and append-only history both assume version
+  control. Ask the owner to run `git init` + first commit before the system
+  goes LIVE; build all files meanwhile so confirmation is the only step left.
 
 ## STEP 3 — OWNER QUESTIONS
 

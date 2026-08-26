@@ -3,6 +3,21 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] — 2026-08-26
+
+### Added
+
+- **Pattern: Worktree-Based Parallel Coding** (`patterns/worktree-parallel.md`) —
+  extends the three-mutex model to true simultaneous source edits via git
+  worktrees; includes rules and explicit failure modes
+- **Integration: Governance compliance check** (`integrations/governance-check.yml`) —
+  optional GitHub Actions workflow validating link integrity, placeholder leaks,
+  version consistency, and registry presence on PRs
+- **Issue templates** — pattern proposal (evidence-required format) and bug report
+- **Worked example** (`examples/example-THREADS.md`) — live registry with three
+  threads at different stages plus stale-lock handling walkthrough
+- Setup-prompt guidance for projects with no test framework and no git repository
+
 ## [1.2.0] — 2026-08-26
 
 ### Added
