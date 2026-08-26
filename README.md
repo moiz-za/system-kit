@@ -1,62 +1,79 @@
 # System Kit
 
-**Portable multi-thread governance infrastructure for AI-agent development teams.**
+**Stop your AI agents from destroying each other's work.**
+
+Portable governance infrastructure for AI-agent development teams — copy one
+folder into any project, paste one prompt into any agent, and get instant:
+multi-thread coordination, task tracking, verification gates, push discipline,
+key isolation, and institutional memory.
+
+Built from real production incidents across 26+ concurrent AI-agent sessions.
+Zero code collisions when followed. Nothing here is theoretical.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-1.2.0-blue)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
-Copy one folder into any project. Give any AI agent thread the setup prompt.
-Get instant: multi-thread coordination, task tracking, verification gates,
-push discipline, key isolation, and institutional memory — from day one.
-
-Built from real production incidents across 26+ concurrent AI-agent sessions.
-
 ---
 
-## The Problem This Solves
+## The Problem
 
-AI agent threads are incredibly productive but without governance they:
+AI coding agents (opencode, Claude Code, Cursor, Codex…) are incredibly
+productive and completely ungoverned. Run two in parallel without a system and:
 
-- **Collide**: two agents editing the same files simultaneously → lost work
-- **Hallucinate APIs**: invent methods that don't exist in your codebase → broken implementations
-- **Ship dead code**: syntax errors reaching production because nobody tested locally first
-- **Lose context mid-task**: compaction summarizes away critical details → expensive re-research
-- **Mislabel data**: lifetime totals displayed as "new today" → user trust erodes
-- **Burn quotas**: dead models consuming requests before you find a working one
-- **Expose secrets**: API keys entering LLM context windows → sent to external servers
+| Failure | What it costs you |
+|---|---|
+| Two agents edit the same files | Lost work, broken builds |
+| Agent invents APIs that don't exist | Confidently wrong implementations |
+| Syntax errors ship untested | Dead pages in production |
+| Context compaction mid-task | Re-research the same problem twice |
+| Cumulative data shown as daily | Users catch it before you do |
+| Dead models eat your requests | Quotas burned on routing errors |
+| Keys read into chat context | Secrets sent to external servers |
 
-Every pattern in this kit was born from a real incident. Nothing is theoretical.
+Every pattern in this kit exists because one of these actually happened.
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  1. COPY   templates/ → your-project/docs/              │
+│  2. PASTE  SETUP_PROMPT.md → new agent thread           │
+│  3. ANSWER agent asks about your stack + domain rules   │
+│  4. DONE   governance live: task board, thread registry │
+│            build log, checkpoints, laws                 │
+└─────────────────────────────────────────────────────────┘
+
+Every future thread:  read START_HERE → claim a task → work
+                      → close out → deregister
+```
+
+Collisions are prevented by the **three-mutex model**: `CODE` (source files),
+`LEDGER` (tracking docs), `DB-CF` (infrastructure) are locked separately — so
+a docs-only thread never waits behind a code thread, and two code threads can
+never touch the same file.
 
 ## Quick Start
 
-### 1. Copy into your project
-
 ```bash
-# Copy templates into your project's documentation area
+# 1. Copy templates into your project's documentation area
 cp -r templates/ your-project/docs/
 ```
 
-### 2. Open a new AI agent thread
+2. Open a new AI agent thread and paste the contents of [`SETUP_PROMPT.md`](SETUP_PROMPT.md)
+3. Answer the agent's questions — it scans your project and builds everything
+4. Every future thread starts at the generated `START_HERE.md`
 
-Paste the contents of `SETUP_PROMPT.md` as your first message.
-
-### 3. Follow the initialization
-
-The agent will scan your project, ask questions, build everything customized to your stack.
-See a [completed START_HERE.md](examples/example-START_HERE.md) for what you end up with.
-
-### 4. Every future thread starts here
-
-Open `START_HERE.md` (created during setup) → claim a task → work it → close it.
+See a [fully initialized START_HERE.md](examples/example-START_HERE.md) to know
+what "done" looks like before you start.
 
 ## What You Get
 
 | Capability | How |
 |---|---|
-| Multi-thread coordination | Three-mutex concurrency model (CODE / LEDGER / DB) |
-| Task queue with claim/lock/release | Single entry point with priority queue + conflict detection |
-| Verification gates | Local-first testing + post-deploy smoke checks |
+| Multi-thread coordination | Three-mutex concurrency model (CODE / LEDGER / DB-CF) |
+| Task queue with claim/lock/release | Single entry point + priority queue + conflict detection |
+| Verification gates | Local-first testing, five-step order, owner verifies last |
 | Institutional memory | Append-only ledgers + checkpoint/resume system |
 | Model health checking | Live availability probing before every session |
 | Push discipline | Ledger currency required; owner-gated deployments |
@@ -65,56 +82,63 @@ Open `START_HERE.md` (created during setup) → claim a task → work it → clo
 
 ## Patterns Included
 
-Each pattern is documented with the real failure it prevents:
+Each pattern documents the real failure it prevents:
 
 - [Concurrency Protocol](patterns/concurrency.md) — three-mutex model for parallel safety
 - [Verification Standard](patterns/verification.md) — local-first testing discipline
 - [Security Checklist](patterns/security-checklist.md) — universal + AI-specific requirements
-- [Failure Classes](patterns/failure-classes.md) — documented bug classes with prevention mechanisms
+- [Failure Classes](patterns/failure-classes.md) — twelve documented bug classes with evidence
 - [Cost-Zero Operation](patterns/cost-zero-operation.md) — free-tier rotation and resource management
-- [Model Rotation](patterns/model-rotation.md) — surviving weekly free-catalog churn with live probing
+- [Model Rotation](patterns/model-rotation.md) — surviving weekly free-catalog churn
 - [Prompt Injection Defense](patterns/prompt-injection-defense.md) — containing untrusted data in agent contexts
 - [Context Window Management](patterns/context-window-management.md) — checkpoint-before-compaction discipline
 
-## Documentation Structure
+## Who It's For
 
-```
-system-kit/
-├── SETUP_PROMPT.md            ← THE initialization prompt (paste into any new thread)
-├── README.md                  ← You are here
-├── LICENSE                    ← MIT
-├── CONTRIBUTING.md            ← How to contribute
-├── CHANGELOG.md               ← Version history
-│
-├── templates/                 ← Copy these into any project's docs folder
-│   ├── START_HERE.md          ← Entry point: model selection + task queue
-│   ├── AGENTS.md              ← Operating laws framework
-│   ├── THREADS.md             ← Concurrency registry template
-│   ├── workflow/              ← Task board, build log, pending decisions
-│   └── CHECKPOINTS/           ← Resume checkpoint format
-│
-├── examples/                  ← Worked examples of completed files
-│   └── example-START_HERE.md  ← What a filled-in entry point looks like
-│
-└── patterns/                  ← Proven patterns with failure evidence
-    ├── concurrency.md         ← Mutex model reference
-    ├── verification.md        ← Testing discipline reference
-    ├── security-checklist.md  ← Universal security requirements
-    ├── failure-classes.md     ← Documented failure classes
-    ├── cost-zero-operation.md ← Free-tier resource management
-    ├── model-rotation.md      ← Live catalog probing + rotation rules
-    ├── prompt-injection-defense.md ← Untrusted data containment
-    └── context-window-management.md ← Checkpoint-before-compaction
-```
+- **Solo developers** running several agent threads across projects
+- **Small teams** whose agents keep overwriting each other
+- **Anyone on free tiers** juggling rotating model catalogs
+- **Agent-framework builders** who want a proven governance methodology
 
-## Requirements
+Works with any language, framework, host, AI provider, and any number of
+concurrent threads. Zero dependencies — it's markdown methodology, not software.
 
-None. This kit is methodology, not software. It works with:
-- Any language, framework, or stack
-- Any AI provider (OpenAI, Anthropic, Google, DeepSeek, open-source models)
-- Any hosting platform
-- Any number of concurrent agent threads
-- Solo developers or teams
+## Honest Limitations
+
+This kit relies on agents *following documented protocols*. There is no runtime
+enforcement, no telemetry, no magic. If an agent ignores THREADS.md, nothing
+stops it — the kit makes correct behavior explicit, checkable, and recoverable,
+not automatic. See also: single-machine mutex assumption, English-only templates.
+
+## FAQ
+
+**How is this different from just having an AGENTS.md?**
+An AGENTS.md states rules; System Kit adds the machinery that makes rules
+operational — a live lock registry, append-only history, checkpoint format,
+and an initialization prompt that adapts all of it to your project.
+
+**Does it work with my agent/tool?**
+Yes. It's plain markdown instructions — any LLM agent that can read and write
+files can follow it (opencode, Claude Code, Cursor, Codex CLI, custom agents).
+
+**Does it phone home / collect anything?**
+No. Zero telemetry, zero network calls, zero data collection. Copy the files,
+own them forever.
+
+## Documentation
+
+| File | Purpose |
+|---|---|
+| [`SETUP_PROMPT.md`](SETUP_PROMPT.md) | Paste into a new thread → initializes governance (+ troubleshooting appendix) |
+| [`templates/`](templates/) | Copy into your project: entry point, laws, thread registry, workflow boards |
+| [`patterns/`](patterns/) | Read-only references explaining why each rule exists |
+| [`examples/`](examples/) | Worked example of a fully initialized system |
+
+## Contributing
+
+Patterns backed by real incidents are the most valuable contributions — see
+[CONTRIBUTING.md](CONTRIBUTING.md) for the proposal format. Bug fixes and
+clarity improvements always welcome.
 
 ## License
 
