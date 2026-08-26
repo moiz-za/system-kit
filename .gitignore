@@ -1,0 +1,18 @@
+# Private development notes — never pushed to public repo
+docs/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor artifacts
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-*
+
+# Temp files
+*.tmp
+*.bak

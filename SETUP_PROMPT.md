@@ -1,0 +1,153 @@
+# SETUP_PROMPT — Governance System Initialization
+
+> Copy-paste this entire prompt into a new AI agent thread in your project.
+> The agent will scan your project, ask questions, and build everything.
+
+---
+
+You are initializing a governance system for this project. Follow these steps
+in exact order. Do not skip steps. Do not assume anything not stated here or
+discovered during scanning.
+
+## STEP 1 — EXISTING DOCUMENTATION CHECK
+
+Ask the user:
+"Do you already have internal documentation (laws, rules, task boards, logs)
+for this project?"
+
+**If YES:**
+- Ask for the path to the documentation folder
+- Read EVERY file in that folder recursively
+- Catalog each file:
+  - What it contains (laws? tasks? plans? logs? checkpoints?)
+  - Whether it's current or historical
+  - Whether it overlaps with any other file
+- Produce an INTEGRATION MANIFEST listing every file found and its disposition:
+  - INTEGRATED (moved into new structure)
+  - REFERENCED (kept in place, linked from new docs)
+  - FLAGGED (unreadable, needs owner attention)
+  - MERGED (duplicates combined, both originals preserved in archive)
+- Present the manifest to the user before proceeding
+- Never delete any file. Move only. Originals preserved.
+
+**If NO:**
+- Note that all files will be created fresh from templates
+
+## STEP 2 — CODEBASE SCAN
+
+Scan the project codebase and report:
+
+1. Primary language(s) and framework(s)
+2. Build system / package manager
+3. Test framework + how to run tests
+4. Linter/formatter commands
+5. CI/CD setup (if any)
+6. Deploy method (SSH / FTP / container / serverless / none)
+7. Security posture (auth system, encryption, API key handling)
+
+Also check:
+- Are there existing secrets exposed anywhere?
+- Is there a pre-commit hook configured?
+- What's the git remote / hosting situation?
+
+## STEP 3 — OWNER QUESTIONS
+
+Ask the user these questions (plain language, one at a time if needed):
+
+1. What is this project called and what does it do?
+2. Who is it for? (personal use, clients, public product?)
+3. What are the domain-specific rules? (things that must always or never happen)
+4. How do you push/deploy changes? (method, frequency, who approves)
+5. What verification commands must pass before committing?
+6. Any security constraints specific to this domain?
+
+Record ALL answers — they become the project's domain laws.
+
+## STEP 4 — BUILD THE SYSTEM
+
+Create the following structure in the documentation area:
+
+```
+[DOCS-FOLDER]/
+├── START_HERE.md          ← Entry point: model check → task claim → work
+├── AGENTS.md              ← Laws: universal + domain-specific + amendment log
+├── THREADS.md             ← Live concurrency registry
+├── workflow/
+│   ├── TASKS.md           ← Task board (ID · Task · Spec · Needs · Status)
+│   ├── BUILDLOG.md        ← Append-only history
+│   └── PENDING-OWNER.md   ← Decisions waiting on owner
+└── CHECKPOINTS/
+    └── _TEMPLATE.md       ← Resume checkpoint format
+```
+
+Fill every file using:
+- Universal patterns (defined below)
+- Answers from Steps 1–3
+- Domain-specific rules from owner
+
+### Universal laws (include in every AGENTS.md):
+
+1. **Secrets never enter tracked files, conversations, or LLM context.**
+   Keys live in env vars, secret managers, or platform stores. Always.
+2. **Verify before commit.** Run full test suite + linter + security scan locally
+   before every commit. An unverified change does not get committed.
+3. **Local-first verification.** The live/production environment is never the
+   first test bench. Prove it works locally, then deploy, then smoke-check live.
+4. **Append-only ledgers.** History is never rewritten. Every change gets its
+   own entry. Corrections are new entries referencing the old ones.
+5. **Plain-language owner gate.** All decisions presented to the owner in simple
+   English with recommended defaults. Owner interrupted ONLY for risky actions.
+6. **Key isolation in tooling.** Scripts that test connectivity handle credentials
+   internally and return sanitized results. Agents must never read, display,
+   or transmit raw keys.
+7. **Clean-tree handoff.** Releasing a mutex requires committed (or stashed +
+   noted) work. Next thread inherits a known state, not half-done changes.
+8. **Push-sync protocol.** Before pushing: ledgers updated. After deploying:
+   re-read law files to absorb concurrent changes from other threads.
+9. **Compaction protocol.** At ~70% context or on compaction signal: checkpoint
+   first, then re-read all core docs after context reset before continuing.
+10. **Data honesty.** Cumulative totals are never labeled as daily events.
+    Deltas are computed from consecutive snapshots. Labels match reality.
+
+### Concurrency protocol (include in every THREADS.md):
+
+Three mutexes prevent collisions between parallel threads:
+- **CODE**: exclusive right to edit source files (one thread at a time)
+- **LEDGER**: short hold on shared tracking files (append-only edits only)
+- **DB-CF**: database/schema/cloud-infrastructure changes
+
+Rules:
+- Register before working; deregister when done
+- Never touch another thread's owned files
+- Stale threads (>4h no heartbeat) may be reclaimed after flagging
+- Shared file restructures require ALL-CLEAR (zero other registered threads)
+
+### Verification standard (include in START_HERE.md):
+
+The live/production environment is NEVER the first test bench:
+(a) Full local suite → (b) local render/interaction pass for UI →
+(c) commit → push → deploy → (d) read-only live smoke check by agent →
+(e) owner functional verification LAST.
+
+## STEP 5 — PRESENT AND CONFIRM
+
+Present the initialized system to the owner:
+- Show the file tree
+- Show the first task queue entry as example
+- Confirm all domain laws are captured correctly
+- Ask: "Is anything missing or incorrect?"
+
+After owner confirms:
+- Mark system as LIVE in the entry point
+- The project now accepts task claims via the standard protocol
+- Archive the setup prompt (rename with date suffix)
+
+---
+
+## QUALITY REMINDERS FOR THE INITIALIZING AGENT
+
+- Read existing docs BEFORE asking questions (context prevents redundant asks)
+- Never expose API keys, tokens, or secrets in any output
+- If existing docs conflict with templates, ASK the owner which wins
+- Suggest improvements you notice but NEVER auto-implement them
+- Record everything in the build log as you go
