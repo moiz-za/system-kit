@@ -13,9 +13,11 @@
 ## What the compliance check verifies
 
 1. **Relative link integrity** — every relative markdown link in the repo resolves
-2. **Placeholder leaks** — no `[PROJECT NAME]` / `[DOMAIN]` markers left in tracked files
+2. **Placeholder leaks** — no unfilled `[PROJECT NAME]` / `[DOMAIN LAWS ...]` markers
+   outside the kit's own source files (`templates/`, `SETUP_PROMPT.md`, `integrations/`,
+   `CHANGELOG.md`)
 3. **Version consistency** — README version badge matches the latest CHANGELOG entry
-4. **Registry sanity** — THREADS.md exists and has its required section headers
+4. **Registry present** — THREADS.md exists (repo root or `docs/`)
 
 Add more project-specific gates as steps — the pattern is: cheap structural
 checks in CI, expensive semantic checks by the verifying thread locally.

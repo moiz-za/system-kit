@@ -38,6 +38,6 @@
 ---
 
 **Stale-lock example:** if alpha's heartbeat showed `2026-08-26 09:02` (no
-update for 4h+), any thread may first *flag* it in §5 notifications — e.g.,
-"gamma 14:05: alpha heartbeat stale on T-040" — and only reclaim after that
-flag is visible. Never silently deregister another thread.
+update for 4h+), any thread may first *flag* it in the START_HERE.md §5
+notifications — e.g., "gamma 14:05: alpha heartbeat stale on T-040" — and only
+reclaim after that flag is visible. Never silently deregister another thread.

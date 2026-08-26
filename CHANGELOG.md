@@ -3,6 +3,28 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.2] — 2026-08-26
+
+### Fixed
+
+- **Example workflow link-checker bug** — the relative-link check in
+  `integrations/governance-check.yml` used an `IFS=:` parse that glued the
+  link target to the line number, so it always passed regardless of broken
+  links, and depended on GNU-only `realpath`. Rewritten to split correctly
+  and skip anchors/external URLs portably.
+- **Placeholder-check false positives** — the workflow's placeholder scan
+  flagged the kit's own `templates/`, `SETUP_PROMPT.md`, and `integrations/`
+  files, which legitimately ship `[PROJECT NAME]` markers. Exclusions added.
+- **Stale example copy** — `examples/example-START_HERE.md` still said
+  "run model check" after the §0 removal in 1.3.1. Removed.
+- **Ambiguous §5 reference** — `examples/example-THREADS.md` referenced a bare
+  "§5"; clarified to "START_HERE.md §5 notifications".
+
+### Changed
+
+- `integrations/README.md` — check descriptions aligned with what the
+  workflow actually verifies.
+
 ## [1.3.1] — 2026-08-26
 
 ### Changed

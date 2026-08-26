@@ -9,7 +9,7 @@
 # START_HERE.md — Taskloop Entry Point
 
 > **THE single entry point for every new thread.**
-> Read this → run model check → claim a task → work it → close it.
+> Read this → claim a task → work it → close it.
 > If your target is locked or conflicting → notify, don't start.
 
 ---

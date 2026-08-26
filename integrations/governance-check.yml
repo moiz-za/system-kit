@@ -16,21 +16,37 @@ jobs:
       - name: Relative markdown links resolve
         run: |
           fail=0
-          while IFS=: read -r file line target; do
-            dir=$(dirname "$file")
-            resolved=$(realpath -m --relative-to=. "$dir/$target" 2>/dev/null)
-            if [ ! -e "$resolved" ]; then
+          # Each match looks like: <file>:<line>:<link> where <link> is relative
+          # to <file>'s directory. Split on ':' and ' ' to get file, line, target.
+          while IFS=': ' read -r file line target; do
+            case "$target" in
+              '' ) continue ;;
+            esac
+            case "$target" in
+              \#*) continue ;;          # in-file anchor
+              http*) continue ;;        # external URL
+            esac
+            if [ ! -e "$(dirname "$file")/$target" ]; then
               echo "BROKEN LINK: $file:$line -> $target"
               fail=1
             fi
-          done < <(grep -rnoE '\]\(([^)h][^)]*)\)' --include='*.md' . \
+          done < <(grep -rnoE '\]\(([^)]+)\)' --include='*.md' . \
             | sed -E 's/:([0-9]+):.*\]\(([^)]+)\).*/:\1 \2/' \
             | grep -v '^$')
           exit $fail
 
       - name: No unresolved template placeholders
         run: |
-          if grep -rn "\[PROJECT NAME\]\|\[DOMAIN LAWS" --include="*.md" . ; then
+          # Kit source files (templates/, SETUP_PROMPT.md, integrations/) ship
+          # or document placeholders by design; CHANGELOG documents placeholder
+          # fixes in prose. Only fail on placeholders that escaped into live
+          # project files.
+          if grep -rn "\[PROJECT NAME\]\|\[DOMAIN LAWS" \
+              --include="*.md" \
+              --exclude-dir=templates \
+              --exclude-dir=integrations \
+              --exclude=SETUP_PROMPT.md \
+              --exclude=CHANGELOG.md . ; then
             echo "FAIL: placeholder markers leaked into tracked files"
             exit 1
           fi
