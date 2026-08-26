@@ -72,6 +72,9 @@ Each pattern is documented with the real failure it prevents:
 - [Security Checklist](patterns/security-checklist.md) — universal + AI-specific requirements
 - [Failure Classes](patterns/failure-classes.md) — documented bug classes with prevention mechanisms
 - [Cost-Zero Operation](patterns/cost-zero-operation.md) — free-tier rotation and resource management
+- [Model Rotation](patterns/model-rotation.md) — surviving weekly free-catalog churn with live probing
+- [Prompt Injection Defense](patterns/prompt-injection-defense.md) — containing untrusted data in agent contexts
+- [Context Window Management](patterns/context-window-management.md) — checkpoint-before-compaction discipline
 
 ## Documentation Structure
 
@@ -98,7 +101,10 @@ system-kit/
     ├── verification.md        ← Testing discipline reference
     ├── security-checklist.md  ← Universal security requirements
     ├── failure-classes.md     ← Documented failure classes
-    └── cost-zero-operation.md ← Free-tier resource management
+    ├── cost-zero-operation.md ← Free-tier resource management
+    ├── model-rotation.md      ← Live catalog probing + rotation rules
+    ├── prompt-injection-defense.md ← Untrusted data containment
+    └── context-window-management.md ← Checkpoint-before-compaction
 ```
 
 ## Requirements

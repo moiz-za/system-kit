@@ -3,6 +3,21 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] — 2026-08-26
+
+### Added
+
+- **Pattern: Model Rotation** (`patterns/model-rotation.md`) — live-probing
+  procedure for surviving free-tier catalog churn; covers mid-session failure
+  handling and rotation rules
+- **Pattern: Prompt Injection Defense** (`patterns/prompt-injection-defense.md`) —
+  four defense layers for untrusted data in agent contexts; detection signals
+  and honest limitations
+- **Pattern: Context Window Management** (`patterns/context-window-management.md`) —
+  checkpoint-before-compaction discipline with five triggers and re-entry protocol
+- Governance system applied to this repo's own development (dogfooding):
+  the kit now manages its own task board, build log, and thread registry
+
 ## [1.1.0] — 2026-08-26
 
 ### Added
