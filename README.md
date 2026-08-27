@@ -5,7 +5,7 @@
 <br>
 
 [![Release](https://img.shields.io/github/v/release/moiz-za/system-kit?label=release&color=success)](https://github.com/moiz-za/system-kit/releases)
-![Version](https://img.shields.io/badge/version-1.5.0-blue)
+![Version](https://img.shields.io/badge/version-1.5.1-blue)
 [![Stars](https://img.shields.io/github/stars/moiz-za/system-kit?style=social)](https://github.com/moiz-za/system-kit/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blue?logo=github)](https://github.com/moiz-za/system-kit/discussions)
@@ -61,7 +61,9 @@ the kit folder is.
 
 **4. Answer the questions** — the agent scans your project, asks about it in
 plain English, then copies the kit's `docs/` folder into your project and
-fills in every file for you.
+fills in every file for you. If your project already has a `docs/` folder
+with its own documentation, the agent keeps governance files in a dedicated
+subfolder instead of mixing them in.
 
 **That's it.** You never edit files by hand. From now on, every new agent
 thread starts at `docs/START_HERE.md` in your project.
@@ -173,7 +175,10 @@ and an initialization prompt that adapts all of it to your project.
 
 **Does it work with my agent/tool?**
 Yes. It's plain markdown — any LLM agent that can read and write files can
-follow it (opencode, Claude Code, Cursor, Codex CLI, custom agents).
+follow it (opencode, Claude Code, Cursor, Codex CLI, custom agents). Even a
+web-chat agent without file access can initialize the system, because the
+setup prompt embeds the full file-structure spec — but an in-project agent
+gives the best results.
 
 **Does it phone home or collect anything?**
 No. Zero telemetry, zero network calls, zero data collection.

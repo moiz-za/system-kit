@@ -3,6 +3,15 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.1] — 2026-08-27
+
+### Fixed
+
+- **README now reflects v1.5.0 capabilities** — FAQ clarifies that web-chat
+  agents without file access can also initialize the system (setup prompt
+  embeds the full file-structure spec); Quick Start notes the dedicated-
+  subfolder behavior when a project already has its own `docs/`.
+
 ## [1.5.0] — 2026-08-27
 
 ### Added
