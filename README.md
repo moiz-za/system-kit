@@ -11,7 +11,7 @@ Built from real production incidents across 26+ concurrent AI-agent sessions.
 Zero code collisions when followed. Nothing here is theoretical.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.3.3-blue)
+![Version](https://img.shields.io/badge/version-1.3.4-blue)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
 ---
@@ -61,7 +61,8 @@ cp -r templates/ your-project/docs/
 ```
 
 2. Open a new AI agent thread and paste the contents of [`SETUP_PROMPT.md`](SETUP_PROMPT.md)
-3. Answer the agent's questions — it scans your project and builds everything
+3. Answer the agent's questions — it scans your project and fills everything in
+   (if you skipped step 1, it creates the structure itself at `docs/`)
 4. Every future thread starts at the generated `START_HERE.md`
 
 See a [fully initialized START_HERE.md](examples/example-START_HERE.md) to know

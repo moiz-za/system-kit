@@ -27,3 +27,8 @@ checks in CI, expensive semantic checks by the verifying thread locally.
 
 Copy the file to `.github/workflows/governance-check.yml` in your repository.
 It runs on pull requests targeting `main`.
+
+**Note:** the registry check expects `THREADS.md` to be *tracked* in the repo
+(the normal case — a project's live registry is committed). It will fail in
+repositories that keep their registry gitignored (like this kit's own private
+`docs/`); delete that step there or point it at your tracked registry path.

@@ -3,6 +3,17 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.4] — 2026-08-26
+
+### Changed
+
+- **Quick Start clarified** — README now states the setup prompt fills copied
+  templates in place, or creates the `docs/` structure itself if step 1 was
+  skipped. Removes the copy-then-build ambiguity.
+- **`integrations/README.md`** — documented that the registry check expects a
+  tracked `THREADS.md` (fails where the registry is gitignored, e.g. this
+  kit's own private `docs/`).
+
 ## [1.3.3] — 2026-08-26
 
 ### Fixed
