@@ -3,6 +3,14 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.6] — 2026-08-26
+
+### Changed
+
+- **Quick Start folder clarity** — README now states explicitly that only
+  `templates/` is copied into a project; `patterns/`, `examples/`, and
+  `integrations/` are reference material that stays with the kit.
+
 ## [1.3.5] — 2026-08-26
 
 ### Changed

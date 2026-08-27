@@ -9,7 +9,7 @@ Get instant multi-thread coordination, task tracking, verification gates,
 and institutional memory.
 
 [![Release](https://img.shields.io/github/v/release/moiz-za/system-kit?label=release&color=success)](https://github.com/moiz-za/system-kit/releases)
-![Version](https://img.shields.io/badge/version-1.3.5-blue)
+![Version](https://img.shields.io/badge/version-1.3.6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
@@ -98,6 +98,13 @@ cp -r templates/ your-project/docs/
 everything in (if you skipped step 1, it creates the `docs/` structure itself)
 
 **4. Done.** Every future thread starts at the generated `START_HERE.md`.
+
+> **Only `templates/` gets copied into your project.** Everything else stays
+> with the kit as reference material:
+> [`patterns/`](patterns/) explains *why* each rule exists,
+> [`examples/`](examples/) shows what a finished setup looks like, and
+> [`integrations/`](integrations/) holds optional tool glue (e.g., a CI check).
+> See [Repository Layout](#repository-layout) for the full map.
 
 > See a [fully initialized START_HERE.md](examples/example-START_HERE.md) and a
 > [live THREADS registry](examples/example-THREADS.md) to know what "done"
