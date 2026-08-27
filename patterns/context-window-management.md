@@ -27,7 +27,7 @@ matters.
 
 ### What goes into a checkpoint
 
-Use `templates/CHECKPOINTS/_TEMPLATE.md`. Minimum viable content:
+Use `docs/CHECKPOINTS/_TEMPLATE.md`. Minimum viable content:
 
 - **Last completed step** — specific enough to verify against files
 - **Next step** — exactly what to do, so resume requires zero re-research

@@ -8,12 +8,12 @@ the need for every pattern in it. Your hard-won lessons are welcome here.
 - **New patterns** that prevent a documented, reproducible failure class
 - **Improvements** to existing templates or protocols
 - **Translations** of the core documentation
-- **Bug fixes** in templates (typos, unclear instructions, broken examples)
+- **Bug fixes** in the docs templates (typos, unclear instructions, broken examples)
 
 ## What we don't accept
 
 - Domain-specific rules (this is a universal kit — adapt per project after deployment)
-- Tool-specific integrations in core templates/patterns (keep them methodology,
+- Tool-specific integrations in core docs/patterns (keep them methodology,
   not implementation — optional tool glue lives separately in `integrations/`)
 - Changes that weaken security isolation or verification standards
 

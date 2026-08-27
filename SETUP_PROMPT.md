@@ -31,7 +31,7 @@ for this project?"
 - Never delete any file. Move only. Originals preserved.
 
 **If NO:**
-- Note that all files will be created fresh from templates
+- Note that all files will be created fresh from the kit's docs files
 
 ## STEP 2 — CODEBASE SCAN
 
@@ -85,7 +85,9 @@ Record ALL answers — they become the project's domain laws.
 
 ## STEP 4 — BUILD THE SYSTEM
 
-Create the following structure in the documentation area:
+If the System Kit folder is readable from here, copy its `docs/` folder into
+the project's documentation area and fill every file in place. Otherwise
+create the following structure from scratch:
 
 > If the project has no documentation area yet (empty/greenfield project),
 > create one at `docs/` in the repository root and say so explicitly when
@@ -192,6 +194,6 @@ stop and correct before proceeding.
 | 5 | Writing verification commands you never ran | Broken gate blocks every future commit | Run each command once; record real output status |
 | 6 | Building all files silently, then dumping them at once | Owner can't course-correct mid-setup | Present after Step 5 confirmation gate |
 | 7 | Weakening the three-mutex model to one lock ("simplification") | Docs-only threads serialize behind code work | Preserve CODE/LEDGER/DB-CF separation always |
-| 8 | Copying example content from this kit into live files | Placeholder/example text pollutes the real system | Templates are structure; fill from THIS project's reality |
+| 8 | Copying example content from this kit into live files | Placeholder/example text pollutes the real system | Kit docs files are structure; fill from THIS project's reality |
 | 9 | Reading credential files to "check provider health" | Secrets enter LLM context | Use key-safe tooling; sanitized results only |
 | 10 | Marking the system LIVE without owner confirmation | Unvalidated governance becomes binding law | Step 5 confirmation is mandatory, not optional |

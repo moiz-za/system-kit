@@ -1,9 +1,9 @@
 # Integrations — Optional, Tool-Specific Extras
 
-> The core kit (`templates/`, `patterns/`, `SETUP_PROMPT.md`) is deliberately
+> The core kit (`docs/`, `patterns/`, `SETUP_PROMPT.md`) is deliberately
 > methodology-only per CONTRIBUTING.md. Everything in this folder is **optional**
 > glue for specific tools. Nothing here is required to run System Kit, and new
-> integrations live only here — not in the core templates.
+> integrations live only here — not in the core docs.
 
 ## Contents
 
@@ -15,7 +15,7 @@
 
 1. **Relative link integrity** — every relative markdown link in the repo resolves
 2. **Placeholder leaks** — no unfilled `[PROJECT NAME]` / `[DOMAIN LAWS ...]` markers
-   outside the kit's own source files (`templates/`, `SETUP_PROMPT.md`, `integrations/`,
+   outside the kit's own source files (`docs/`, `SETUP_PROMPT.md`, `integrations/`,
    `CHANGELOG.md`)
 3. **Version consistency** — README version badge matches the latest CHANGELOG entry
 4. **Registry present** — THREADS.md exists (repo root or `docs/`)
@@ -31,4 +31,4 @@ It runs on pull requests targeting `main`.
 **Note:** the registry check expects `THREADS.md` to be *tracked* in the repo
 (the normal case — a project's live registry is committed). It will fail in
 repositories that keep their registry gitignored (like this kit's own private
-`docs/`); delete that step there or point it at your tracked registry path.
+`.dev/`); delete that step there or point it at your tracked registry path.

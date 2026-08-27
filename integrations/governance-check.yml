@@ -35,13 +35,15 @@ jobs:
 
       - name: No unresolved template placeholders
         run: |
-          # Kit source files (templates/, SETUP_PROMPT.md, integrations/) ship
+          # Kit source files (docs/, SETUP_PROMPT.md, integrations/) ship
           # or document placeholders by design; CHANGELOG documents placeholder
           # fixes in prose. Only fail on placeholders that escaped into live
-          # project files.
+          # project files. (In your own project — where docs/ holds your
+          # FILLED governance files — remove --exclude-dir=docs so unfilled
+          # placeholders there get caught.)
           if grep -rn "\[PROJECT NAME\]\|\[DOMAIN LAWS" \
               --include="*.md" \
-              --exclude-dir=templates \
+              --exclude-dir=docs \
               --exclude-dir=integrations \
               --exclude=SETUP_PROMPT.md \
               --exclude=CHANGELOG.md . ; then

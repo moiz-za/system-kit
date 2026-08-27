@@ -1,5 +1,5 @@
 # Private development notes — never pushed to public repo
-docs/
+.dev/
 
 # OS junk
 .DS_Store

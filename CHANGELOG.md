@@ -3,6 +3,23 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0] — 2026-08-27
+
+### Changed
+
+- **BREAKING (folder rename): `templates/` is now `docs/`** — the governance
+  files are now the actual docs folder an agent copies into your project and
+  fills in. No more "templates" concept for users to understand: you get docs,
+  the agent fills them. SETUP_PROMPT Step 4 now copies the kit's `docs/`
+  directly when readable.
+- **README rebuilt for non-technical users** — new "Why I Built This" founder
+  story (the real incidents behind every pattern), terminal-free Quick Start
+  (Download ZIP → paste prompt → answer questions), "Do I need to be
+  technical?" FAQ, and a folder-purpose table making clear only `docs/` goes
+  into your project.
+- CI compliance check updated for the rename (placeholder exclusion now
+  `docs/`); integrations docs aligned.
+
 ## [1.3.6] — 2026-08-26
 
 ### Changed

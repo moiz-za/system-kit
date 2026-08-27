@@ -9,7 +9,7 @@ Get instant multi-thread coordination, task tracking, verification gates,
 and institutional memory.
 
 [![Release](https://img.shields.io/github/v/release/moiz-za/system-kit?label=release&color=success)](https://github.com/moiz-za/system-kit/releases)
-![Version](https://img.shields.io/badge/version-1.3.6-blue)
+![Version](https://img.shields.io/badge/version-1.4.0-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
@@ -17,9 +17,25 @@ and institutional memory.
 
 ---
 
-Built from real production incidents across **26+ concurrent AI-agent sessions
-with zero code collisions** when the protocol is followed. Every pattern in this
-kit exists because something actually broke. Nothing here is theoretical.
+## Why I Built This
+
+I'm not a professional developer. I build products with AI agents — and I hit
+every failure in the book the hard way:
+
+- Agents **inventing APIs and code that didn't exist**, then shipping it
+- **Two agents editing the same files** at once, silently destroying work
+- **API keys leaking into chat context**, on their way to external servers
+- **Untested, broken code reaching production** because nothing forced a local check
+- **Context resets erasing decisions**, so the same problems got re-solved for days
+- **Numbers mislabeled** (lifetime totals shown as "new today") until users noticed
+
+Each mistake cost real time, money, or trust. So instead of patching incidents
+one by one, I wrote down the system that prevents each one — and proved it
+across **26+ concurrent AI-agent sessions with zero code collisions**.
+
+System Kit is that system, released so nobody else has to learn these lessons
+the expensive way. No technical background needed: you paste one prompt,
+answer plain-English questions, and your AI agent sets everything up.
 
 ## Contents
 
@@ -58,10 +74,11 @@ System Kit prevents each of these with a documented, checkable mechanism.
 ## How It Works
 
 ```
-1. COPY     templates/ → your-project/docs/
-2. PASTE    SETUP_PROMPT.md → new agent thread
-3. ANSWER   the agent asks about your stack + domain rules
-4. LIVE     task board · thread registry · build log · checkpoints · laws
+1. GET      download this repo (green "Code" button → Download ZIP)
+2. PASTE    SETUP_PROMPT.md → your AI agent, in your project
+3. ANSWER   plain-English questions about your project and its rules
+4. LIVE     the agent builds everything: task board · thread registry ·
+            build log · checkpoints · operating laws
 ```
 
 Every future thread follows one loop:
@@ -86,29 +103,35 @@ thread — and two code threads can never touch the same file.
 
 ## Quick Start
 
-**1. Copy the templates into your project**
+**1. Get the kit** — on this repo's page, click the green **Code** button →
+**Download ZIP**, then unzip it anywhere.
 
-```bash
-cp -r templates/ your-project/docs/
-```
+**2. Open your AI agent in your project** — opencode, Claude Code, Cursor,
+or any agent that can read files and write to your project.
 
-**2. Paste [`SETUP_PROMPT.md`](SETUP_PROMPT.md) into a new agent thread**
+**3. Paste the setup prompt** — open `SETUP_PROMPT.md` from the unzipped kit,
+copy its whole contents, and paste it as your first message. Tell the agent
+where the unzipped kit folder is.
 
-**3. Answer the agent's questions** — it scans your project and fills
-everything in (if you skipped step 1, it creates the `docs/` structure itself)
+**4. Answer the questions** — the agent scans your project, asks about it in
+plain English, then copies the kit's `docs/` folder into your project and
+fills in every file for you.
 
-**4. Done.** Every future thread starts at the generated `START_HERE.md`.
-
-> **Only `templates/` gets copied into your project.** Everything else stays
-> with the kit as reference material:
-> [`patterns/`](patterns/) explains *why* each rule exists,
-> [`examples/`](examples/) shows what a finished setup looks like, and
-> [`integrations/`](integrations/) holds optional tool glue (e.g., a CI check).
-> See [Repository Layout](#repository-layout) for the full map.
+**That's it.** You never edit template files by hand. From now on, every new
+agent thread starts at `docs/START_HERE.md` in your project.
 
 > See a [fully initialized START_HERE.md](examples/example-START_HERE.md) and a
 > [live THREADS registry](examples/example-THREADS.md) to know what "done"
 > looks like before you start.
+
+**What each folder is for:**
+
+| Folder | Role |
+|---|---|
+| [`docs/`](docs/) | **The only folder that goes into your project** — the agent copies and fills it |
+| [`patterns/`](patterns/) | Read-only references explaining *why* each rule exists |
+| [`examples/`](examples/) | A finished setup, so you can see the end result |
+| [`integrations/`](integrations/) | Optional extras (e.g., a CI compliance check) |
 
 ---
 
@@ -147,10 +170,10 @@ Each pattern documents the real failure class it prevents:
 
 ## Who It's For
 
+- **Non-technical founders** building with AI agents who can't afford silent failures
 - **Solo developers** running several agent threads across projects
 - **Small teams** whose agents keep overwriting each other
 - **Anyone on free tiers** juggling rotating model catalogs
-- **Agent-framework builders** who want a proven governance methodology
 
 Works with any language, framework, host, AI provider, and any number of
 concurrent threads. **Zero dependencies** — it's markdown methodology, not
@@ -173,6 +196,10 @@ software.
 
 ## FAQ
 
+**Do I need to be technical to use this?**
+No. The setup is one pasted prompt plus plain-English questions — your AI
+agent does the file work. You only ever make decisions, never edit templates.
+
 **How is this different from just having an AGENTS.md?**
 An AGENTS.md states rules; System Kit adds the machinery that makes rules
 operational — a live lock registry, append-only history, checkpoint format,
@@ -193,7 +220,7 @@ own them forever.
 | Path | Purpose |
 |---|---|
 | [`SETUP_PROMPT.md`](SETUP_PROMPT.md) | Paste into a new thread → initializes governance (incl. troubleshooting appendix) |
-| [`templates/`](templates/) | Copy into your project: entry point, laws, thread registry, workflow boards, checkpoints |
+| [`docs/`](docs/) | The governance files the agent copies into your project and fills in |
 | [`patterns/`](patterns/) | Read-only references explaining why each rule exists |
 | [`examples/`](examples/) | Worked examples: initialized START_HERE + live THREADS registry |
 | [`integrations/`](integrations/) | Optional extras — e.g., GitHub Actions governance-compliance check |
