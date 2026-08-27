@@ -1,99 +1,142 @@
+<div align="center">
+
 # System Kit
 
-**Stop your AI agents from destroying each other's work.**
+**Governance infrastructure for AI-agent development teams.**
 
-Portable governance infrastructure for AI-agent development teams — copy one
-folder into any project, paste one prompt into any agent, and get instant:
-multi-thread coordination, task tracking, verification gates, push discipline,
-key isolation, and institutional memory.
+Copy one folder into any project. Paste one prompt into any agent.
+Get instant multi-thread coordination, task tracking, verification gates,
+and institutional memory.
 
-Built from real production incidents across 26+ concurrent AI-agent sessions.
-Zero code collisions when followed. Nothing here is theoretical.
-
+[![Release](https://img.shields.io/github/v/release/moiz-za/system-kit?label=release&color=success)](https://github.com/moiz-za/system-kit/releases)
+![Version](https://img.shields.io/badge/version-1.3.5-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.3.4-blue)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
+
+</div>
+
+---
+
+Built from real production incidents across **26+ concurrent AI-agent sessions
+with zero code collisions** when the protocol is followed. Every pattern in this
+kit exists because something actually broke. Nothing here is theoretical.
+
+## Contents
+
+- [The Problem](#the-problem)
+- [How It Works](#how-it-works)
+- [Quick Start](#quick-start)
+- [What You Get](#what-you-get)
+- [Patterns Included](#patterns-included)
+- [Who It's For](#who-its-for)
+- [Honest Limitations](#honest-limitations)
+- [FAQ](#faq)
+- [Repository Layout](#repository-layout)
+- [Contributing](#contributing)
 
 ---
 
 ## The Problem
 
-AI coding agents (opencode, Claude Code, Cursor, Codex…) are incredibly
-productive and completely ungoverned. Run two in parallel without a system and:
+AI coding agents are incredibly productive — and completely ungoverned.
+Run two in parallel without a system and the failures are predictable:
 
 | Failure | What it costs you |
 |---|---|
 | Two agents edit the same files | Lost work, broken builds |
 | Agent invents APIs that don't exist | Confidently wrong implementations |
 | Syntax errors ship untested | Dead pages in production |
-| Context compaction mid-task | Re-research the same problem twice |
+| Context compaction mid-task | Re-researching the same problem twice |
 | Cumulative data shown as daily | Users catch it before you do |
 | Dead models eat your requests | Quotas burned on routing errors |
 | Keys read into chat context | Secrets sent to external servers |
 
-Every pattern in this kit exists because one of these actually happened.
+System Kit prevents each of these with a documented, checkable mechanism.
+
+---
 
 ## How It Works
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  1. COPY   templates/ → your-project/docs/              │
-│  2. PASTE  SETUP_PROMPT.md → new agent thread           │
-│  3. ANSWER agent asks about your stack + domain rules   │
-│  4. DONE   governance live: task board, thread registry │
-│            build log, checkpoints, laws                 │
-└─────────────────────────────────────────────────────────┘
-
-Every future thread:  read START_HERE → claim a task → work
-                      → close out → deregister
+1. COPY     templates/ → your-project/docs/
+2. PASTE    SETUP_PROMPT.md → new agent thread
+3. ANSWER   the agent asks about your stack + domain rules
+4. LIVE     task board · thread registry · build log · checkpoints · laws
 ```
 
-Collisions are prevented by the **three-mutex model**: `CODE` (source files),
-`LEDGER` (tracking docs), `DB-CF` (infrastructure) are locked separately — so
-a docs-only thread never waits behind a code thread, and two code threads can
-never touch the same file.
+Every future thread follows one loop:
+
+```
+read START_HERE → claim a task → work it → close out → deregister
+```
+
+Collisions are prevented by the **three-mutex model** — separate locks for
+separate concerns:
+
+| Mutex | Guards | Hold duration |
+|---|---|---|
+| `CODE` | Source files | Task-long |
+| `LEDGER` | Shared tracking docs | Seconds per edit |
+| `DB-CF` | Database / cloud infrastructure | Action-long |
+
+A docs-only thread needs only `LEDGER`, so it never waits behind a code
+thread — and two code threads can never touch the same file.
+
+---
 
 ## Quick Start
 
+**1. Copy the templates into your project**
+
 ```bash
-# 1. Copy templates into your project's documentation area
 cp -r templates/ your-project/docs/
 ```
 
-2. Open a new AI agent thread and paste the contents of [`SETUP_PROMPT.md`](SETUP_PROMPT.md)
-3. Answer the agent's questions — it scans your project and fills everything in
-   (if you skipped step 1, it creates the structure itself at `docs/`)
-4. Every future thread starts at the generated `START_HERE.md`
+**2. Paste [`SETUP_PROMPT.md`](SETUP_PROMPT.md) into a new agent thread**
 
-See a [fully initialized START_HERE.md](examples/example-START_HERE.md) to know
-what "done" looks like before you start.
+**3. Answer the agent's questions** — it scans your project and fills
+everything in (if you skipped step 1, it creates the `docs/` structure itself)
+
+**4. Done.** Every future thread starts at the generated `START_HERE.md`.
+
+> See a [fully initialized START_HERE.md](examples/example-START_HERE.md) and a
+> [live THREADS registry](examples/example-THREADS.md) to know what "done"
+> looks like before you start.
+
+---
 
 ## What You Get
 
 | Capability | How |
 |---|---|
-| Multi-thread coordination | Three-mutex concurrency model (CODE / LEDGER / DB-CF) |
+| Multi-thread coordination | Three-mutex concurrency model with live thread registry |
 | Task queue with claim/lock/release | Single entry point + priority queue + conflict detection |
 | Verification gates | Local-first testing, five-step order, owner verifies last |
 | Institutional memory | Append-only ledgers + checkpoint/resume system |
-| Optional model rotation | Live availability probing for rotating free-tier catalogs |
 | Push discipline | Ledger currency required; owner-gated deployments |
 | Key isolation | Credentials handled internally; never exposed to agents or logs |
 | Plain-language owner gate | Decisions in simple English; owner interrupted only when needed |
+| Optional model rotation | Live availability probing for rotating free-tier catalogs |
+
+---
 
 ## Patterns Included
 
-Each pattern documents the real failure it prevents:
+Each pattern documents the real failure class it prevents:
 
-- [Concurrency Protocol](patterns/concurrency.md) — three-mutex model for parallel safety
-- [Verification Standard](patterns/verification.md) — local-first testing discipline
-- [Security Checklist](patterns/security-checklist.md) — universal + AI-specific requirements
-- [Failure Classes](patterns/failure-classes.md) — twelve documented bug classes with evidence
-- [Cost-Zero Operation](patterns/cost-zero-operation.md) — free-tier rotation and resource management
-- [Model Rotation](patterns/model-rotation.md) — surviving weekly free-catalog churn
-- [Prompt Injection Defense](patterns/prompt-injection-defense.md) — containing untrusted data in agent contexts
-- [Context Window Management](patterns/context-window-management.md) — checkpoint-before-compaction discipline
-- [Worktree Parallel Coding](patterns/worktree-parallel.md) — extending the mutex model to true simultaneous edits
+| Pattern | Prevents |
+|---|---|
+| [Concurrency Protocol](patterns/concurrency.md) | Parallel threads overwriting each other's work |
+| [Verification Standard](patterns/verification.md) | Untested code reaching production |
+| [Security Checklist](patterns/security-checklist.md) | Credential leaks, injection, unsafe defaults |
+| [Failure Classes](patterns/failure-classes.md) | Twelve documented bug classes — with evidence |
+| [Cost-Zero Operation](patterns/cost-zero-operation.md) | Quota burn and surprise cloud bills |
+| [Model Rotation](patterns/model-rotation.md) | Dead/rotated free-tier models breaking sessions |
+| [Prompt Injection Defense](patterns/prompt-injection-defense.md) | Malicious instructions hidden in project data |
+| [Context Window Management](patterns/context-window-management.md) | Decisions lost to context compaction |
+| [Worktree Parallel Coding](patterns/worktree-parallel.md) | Serialized code threads when true parallelism is needed |
+
+---
 
 ## Who It's For
 
@@ -103,14 +146,23 @@ Each pattern documents the real failure it prevents:
 - **Agent-framework builders** who want a proven governance methodology
 
 Works with any language, framework, host, AI provider, and any number of
-concurrent threads. Zero dependencies — it's markdown methodology, not software.
+concurrent threads. **Zero dependencies** — it's markdown methodology, not
+software.
+
+---
 
 ## Honest Limitations
 
-This kit relies on agents *following documented protocols*. There is no runtime
-enforcement, no telemetry, no magic. If an agent ignores THREADS.md, nothing
-stops it — the kit makes correct behavior explicit, checkable, and recoverable,
-not automatic. See also: single-machine mutex assumption, English-only templates.
+> This kit relies on agents *following documented protocols*. There is no
+> runtime enforcement, no telemetry, no magic. If an agent ignores
+> `THREADS.md`, nothing physically stops it — the kit makes correct behavior
+> **explicit, checkable, and recoverable**, not automatic.
+>
+> Also: the mutex model assumes one shared filesystem (see the
+> [worktree pattern](patterns/worktree-parallel.md) for true parallel edits),
+> and templates are English-only.
+
+---
 
 ## FAQ
 
@@ -123,26 +175,37 @@ and an initialization prompt that adapts all of it to your project.
 Yes. It's plain markdown instructions — any LLM agent that can read and write
 files can follow it (opencode, Claude Code, Cursor, Codex CLI, custom agents).
 
-**Does it phone home / collect anything?**
+**Does it phone home or collect anything?**
 No. Zero telemetry, zero network calls, zero data collection. Copy the files,
 own them forever.
 
-## Documentation
+---
 
-| File | Purpose |
+## Repository Layout
+
+| Path | Purpose |
 |---|---|
-| [`SETUP_PROMPT.md`](SETUP_PROMPT.md) | Paste into a new thread → initializes governance (+ troubleshooting appendix) |
-| [`templates/`](templates/) | Copy into your project: entry point, laws, thread registry, workflow boards |
+| [`SETUP_PROMPT.md`](SETUP_PROMPT.md) | Paste into a new thread → initializes governance (incl. troubleshooting appendix) |
+| [`templates/`](templates/) | Copy into your project: entry point, laws, thread registry, workflow boards, checkpoints |
 | [`patterns/`](patterns/) | Read-only references explaining why each rule exists |
-| [`examples/`](examples/) | Worked examples: initialized START_HERE and a live THREADS registry |
+| [`examples/`](examples/) | Worked examples: initialized START_HERE + live THREADS registry |
 | [`integrations/`](integrations/) | Optional extras — e.g., GitHub Actions governance-compliance check |
+
+---
 
 ## Contributing
 
-Patterns backed by real incidents are the most valuable contributions — see
-[CONTRIBUTING.md](CONTRIBUTING.md) for the proposal format. Bug fixes and
-clarity improvements always welcome.
+Patterns backed by **real incidents** are the most valuable contributions —
+see [CONTRIBUTING.md](CONTRIBUTING.md) for the evidence-required proposal
+format. Bug fixes and clarity improvements always welcome.
 
-## License
+---
 
-MIT — use it anywhere, adapt it freely.
+<div align="center">
+
+**MIT License** — use it anywhere, adapt it freely.
+
+If System Kit saved your agents from each other, consider starring the repo —
+it helps other teams find it.
+
+</div>

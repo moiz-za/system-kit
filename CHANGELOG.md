@@ -3,6 +3,15 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.5] — 2026-08-26
+
+### Changed
+
+- **README professionally rebuilt** — centered header with dynamic release
+  badge, table of contents, mutex table, patterns shown as a pattern→prevents
+  table, worked-example callout linking both examples, cleaner section
+  dividers and footer. All facts unchanged; all links verified.
+
 ## [1.3.4] — 2026-08-26
 
 ### Changed
