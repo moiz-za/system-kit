@@ -3,6 +3,24 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.1] — 2026-08-27
+
+### Added
+
+- **Banner** (`media/banner.svg`) — visual identity for the README, following
+  the pattern of comparable repos (spec-kit, BMAD-METHOD).
+- **Community section** — Discussions + Issues links in README.
+- **Mermaid workflow diagram** — the thread loop now renders as a native
+  GitHub diagram instead of ASCII art.
+
+### Changed
+
+- **README optimized against niche research** (github/spec-kit, BMAD-METHOD,
+  awesome-claude-code): linked badge row incl. stars + discussions, GitHub
+  callouts (`[!TIP]`/`[!NOTE]`/`[!WARNING]`) replacing plain blockquotes,
+  founder story tightened to one paragraph (failure table carries the detail),
+  TOC dropped in favor of BMAD-style scannable brevity.
+
 ## [1.4.0] — 2026-08-27
 
 ### Changed
