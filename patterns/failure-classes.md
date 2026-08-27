@@ -26,10 +26,10 @@
 
 ## Class 3 — Cumulative Totals Labeled as Daily Events
 **Severity:** HIGH
-**What happens:** Dashboard displays "980 NEW favorites" when 980 is the lifetime total across all listings. Charts render as flat lines because cumulative values barely change daily.
-**Root cause:** Metrics stored as cumulative counters (e.g., marketplace APIs exposing lifetime totals) treated as if they were daily deltas.
+**What happens:** A dashboard displays "980 NEW events" when 980 is the lifetime total across all items. Charts render as flat lines because cumulative values barely change daily.
+**Root cause:** Metrics stored as cumulative counters (e.g., third-party APIs exposing lifetime totals) treated as if they were daily deltas.
 **Prevention:** Pairwise daily-delta transform: gained(d) = total(d) − total(previous day), clamped ≥0. Labels must match what the number actually represents.
-**Real evidence:** Owner immediately spotted "980 new favorites" as wrong — user trust erodes when displayed data is obviously incorrect.
+**Real evidence:** Owner immediately spotted "980 new events" as wrong — user trust erodes when displayed data is obviously incorrect.
 
 ---
 
@@ -102,6 +102,8 @@
 **Root cause:** LLM cannot distinguish instructions embedded in data from legitimate system prompts.
 **Prevention:** Structured context labeling. Data enters the model clearly marked as untrusted input. Tool-calling restricted to explicitly authorized operations. Output validated against expected schema before execution.
 **Real evidence:** Increasingly common as AI agents interact with more external data sources.
+
+---
 
 ## Class 12 — Stale Catalog Trust
 **Severity:** MEDIUM

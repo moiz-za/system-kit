@@ -9,9 +9,10 @@
 ## OPTIONAL — MULTI-PROVIDER MODEL SELECTION
 
 If this project runs multiple AI providers on rotating free-tier catalogs,
-apply System Kit's **Model Rotation pattern** at every session start:
-live `/models` probing, tiny health checks per candidate, ranked survivors,
-paid fallback last. Skip entirely if you use one paid provider.
+probe model availability live at every session start — never trust a cached
+model list: query each provider's model endpoint, run one tiny health check
+per candidate, rank the survivors, and keep a paid model as the guaranteed
+fallback. Skip this section entirely if you use a single paid provider.
 
 ---
 
@@ -19,6 +20,7 @@ paid fallback last. Skip entirely if you use one paid provider.
 
 0. **SELF-CLEAN:** while in THREADS.md, move any CLOSED rows down to completed.
 1. **Open THREADS.md** — check active threads, held mutexes, heartbeats.
+   Also check `workflow/PENDING-OWNER.md` for decisions that may unblock tasks.
 2. **Scan the task queue** for first OPEN task that:
    - is not locked by another thread
    - has no unmet dependency

@@ -14,6 +14,9 @@ but only if usage is actively managed, not assumed.
 
 ## Provider rotation strategy
 
+> Offerings below were accurate as of 2026-08. Free catalogs rotate constantly —
+> verify current limits before relying on any specific number here.
+
 | Provider | Free offering | Best for | Watch out for |
 |---|---|---|---|
 | OpenCode Zen | ~8-27 free models (rotating) | General coding, reasoning | Catalog rotates weekly; some models flake |

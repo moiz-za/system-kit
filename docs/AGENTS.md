@@ -73,7 +73,8 @@ Three locks prevent collisions between parallel threads:
 
 Laws are added by appending to this file and logging in the amendment table.
 Removing or softening a law requires owner approval + documented reason.
-The sole amendment channel is the designated planning/governance thread.
+The sole amendment channel is the designated planning/governance thread
+(or the owner directly, in solo projects).
 
 ---
 

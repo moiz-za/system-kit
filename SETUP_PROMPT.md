@@ -78,7 +78,8 @@ Ask the user these questions (plain language, one at a time if needed):
 2. Who is it for? (personal use, clients, public product?)
 3. What are the domain-specific rules? (things that must always or never happen)
 4. How do you push/deploy changes? (method, frequency, who approves)
-5. What verification commands must pass before committing?
+5. What verification commands must pass before committing? (If the owner
+   doesn't know, propose defaults from the Step 2 scan and confirm them.)
 6. Any security constraints specific to this domain?
 
 Record ALL answers — they become the project's domain laws.
@@ -105,6 +106,34 @@ create the following structure from scratch:
 └── CHECKPOINTS/
     └── _TEMPLATE.md       ← Resume checkpoint format
 ```
+
+> **If the project already has a `docs/` folder holding product/user
+> documentation,** do not mix governance files into it. Place the governance
+> structure in a dedicated subfolder (e.g. `docs/governance/`) or another
+> owner-approved location, keep ALL governance files in that one folder, and
+> say so explicitly when presenting the system.
+
+> **Building from scratch (kit folder not readable):** reproduce each file's
+> structure below, then fill with THIS project's reality. Do not invent new
+> section layouts — match these so the worked examples remain applicable.
+>
+> - **START_HERE.md** — §1 THE RULE (claim loop) · §2 CONFLICT & NOTIFY ·
+>   §3 TASK QUEUE (table) · §4 LAWS DIGEST + verification commands ·
+>   §5 NOTIFICATIONS (append-only table). Prepend the optional model-selection
+>   block only for multi-provider projects.
+> - **AGENTS.md** — Article I Universal Laws (the ten below) · Article II
+>   Concurrency Protocol · Article III Domain Laws (from owner answers) ·
+>   Article IV Amendment Process + Amendment Log table.
+> - **THREADS.md** — Protocol rules · Active Threads table
+>   (Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status) ·
+>   Recently Completed table.
+> - **workflow/TASKS.md** — Task Queue table (ID | Task | Spec | Needs | Deps |
+>   Status) + Completed table.
+> - **workflow/BUILDLOG.md** — append-only table (Date | Task/ID | Change |
+>   Verification).
+> - **workflow/PENDING-OWNER.md** — Open Decisions table + Pending Actions table.
+> - **CHECKPOINTS/_TEMPLATE.md** — Task · Where You Stopped · Files Touched ·
+>   Key Decisions · Context the Next Thread Needs · Verification State.
 
 Fill every file using:
 - Universal patterns (defined below)
@@ -166,7 +195,8 @@ Present the initialized system to the owner:
 After owner confirms:
 - Mark system as LIVE in the entry point
 - The project now accepts task claims via the standard protocol
-- Archive the setup prompt (rename with date suffix)
+- Archive the setup prompt if a copy lives in the project (rename with a date
+  suffix); otherwise record in BUILDLOG that initialization completed
 
 ---
 
@@ -192,7 +222,7 @@ stop and correct before proceeding.
 | 3 | Skipping the existing-docs integration manifest | Old docs orphaned; institutional memory lost | Catalog EVERY file found; present manifest |
 | 4 | Deleting "duplicate" files during integration | Destroys history; violates append-only spirit | Move + merge only; originals preserved |
 | 5 | Writing verification commands you never ran | Broken gate blocks every future commit | Run each command once; record real output status |
-| 6 | Building all files silently, then dumping them at once | Owner can't course-correct mid-setup | Present after Step 5 confirmation gate |
+| 6 | Building all files silently, then dumping them at once | Owner can't course-correct mid-setup | Present the integration manifest after Step 1 and the full system at Step 5 — never build everything silently |
 | 7 | Weakening the three-mutex model to one lock ("simplification") | Docs-only threads serialize behind code work | Preserve CODE/LEDGER/DB-CF separation always |
 | 8 | Copying example content from this kit into live files | Placeholder/example text pollutes the real system | Kit docs files are structure; fill from THIS project's reality |
 | 9 | Reading credential files to "check provider health" | Secrets enter LLM context | Use key-safe tooling; sanitized results only |

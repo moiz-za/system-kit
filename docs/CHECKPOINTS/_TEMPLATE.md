@@ -25,8 +25,8 @@
 |---|---|
 
 ## Context the Next Thread Needs
-[Anything not obvious from files alone — gotchas, gotchas discovered,
-things that seemed like they'd work but didn't, etc.]
+[Anything not obvious from files alone — gotchas discovered, things that
+seemed like they'd work but didn't, etc.]
 
 ## Verification State
 - Tests passing? [yes/no/count]

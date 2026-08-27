@@ -19,10 +19,10 @@
 *This project runs free-tier rotation, so Model Rotation applies. Last sweep: 2026-08-26.*
 
 ```
-✅ RECOMMENDED: qwen3-coder-480b (OpenRouter :free) — 262k ctx · 1.8s · healthy
-✅ gemini-2.5-flash (Google AI Studio) — 1M ctx · 0.9s · healthy
-⚠️ deepseek-v3.1 (OpenRouter :free) — degraded: intermittent timeouts today
-❌ llama-4-maverick (OpenRouter :free) — dead: model removed from catalog
+[OK]   RECOMMENDED: qwen3-coder-480b (OpenRouter :free) — 262k ctx · 1.8s · healthy
+[OK]   gemini-2.5-flash (Google AI Studio) — 1M ctx · 0.9s · healthy
+[WARN] deepseek-v3.1 (OpenRouter :free) — degraded: intermittent timeouts today
+[DEAD] llama-4-maverick (OpenRouter :free) — dead: model removed from catalog
 
 Guaranteed fallback: anthropic/claude-sonnet (paid — always available)
 ```

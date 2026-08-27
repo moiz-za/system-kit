@@ -3,6 +3,45 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.0] — 2026-08-27
+
+### Added
+
+- **SETUP_PROMPT Step 4: from-scratch file-structure spec** — when the kit
+  folder is not readable by the agent (e.g. web-chat agents without file
+  access), the prompt now specifies each governance file's exact section
+  layout so rebuilt systems match the kit's structure and worked examples.
+- **SETUP_PROMPT Step 4: docs-folder collision guidance** — projects that
+  already have a `docs/` with product documentation now get an explicit rule:
+  governance files go in a dedicated subfolder, never mixed in.
+- **SETUP_PROMPT Step 3:** verification-command question now tells
+  non-technical owners they can say "I don't know" and get proposed defaults.
+
+### Changed
+
+- **docs/START_HERE.md:** optional model-selection block is now fully
+  self-contained (no dangling reference to the kit's patterns folder, which
+  is not copied into user projects); §1 start loop now includes checking
+  PENDING-OWNER.md for unblocking decisions.
+- **docs/AGENTS.md:** amendment channel clarified for solo projects (owner
+  directly, when no governance thread exists).
+- **SETUP_PROMPT Step 5:** archive instruction handles the case where no copy
+  of the prompt lives in the project.
+- **SETUP_PROMPT appendix mistake #6:** corrected behavior now matches the
+  mistake (manifest after Step 1, system at Step 5).
+
+### Fixed
+
+- **docs/CHECKPOINTS/_TEMPLATE.md:** "gotchas, gotchas discovered" typo.
+- **patterns/failure-classes.md:** missing `---` separator before Class 12.
+- **patterns/cost-zero-operation.md:** provider table now carries an as-of
+  date so stale free-tier numbers are recognizable as such.
+- **patterns/failure-classes.md Class 3:** marketplace-specific wording
+  ("favorites", "listings") genericized — the kit targets any project, any
+  stack, any domain.
+- **examples/example-START_HERE.md:** emoji status glyphs replaced with plain
+  text markers (`[OK]` / `[WARN]` / `[DEAD]`).
+
 ## [1.4.1] — 2026-08-27
 
 ### Added
