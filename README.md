@@ -5,7 +5,7 @@
 <br>
 
 [![Release](https://img.shields.io/github/v/release/moiz-za/system-kit?label=release&color=success)](https://github.com/moiz-za/system-kit/releases)
-![Version](https://img.shields.io/badge/version-1.5.1-blue)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
 [![Stars](https://img.shields.io/github/stars/moiz-za/system-kit?style=social)](https://github.com/moiz-za/system-kit/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blue?logo=github)](https://github.com/moiz-za/system-kit/discussions)
@@ -132,6 +132,7 @@ Each pattern documents the real failure class it prevents:
 | [Prompt Injection Defense](patterns/prompt-injection-defense.md) | Malicious instructions hidden in project data |
 | [Context Window Management](patterns/context-window-management.md) | Decisions lost to context compaction |
 | [Worktree Parallel Coding](patterns/worktree-parallel.md) | Serialized code threads when true parallelism is needed |
+| [Non-VCS Mutex](patterns/non-vcs-mutex.md) | Three-mutex concurrency without version control |
 
 ---
 
@@ -143,8 +144,9 @@ Each pattern documents the real failure class it prevents:
 - **Anyone on free tiers** juggling rotating model catalogs
 
 Works with any language, framework, host, AI provider, and any number of
-concurrent threads. **Zero dependencies** — it's markdown methodology, not
-software.
+concurrent threads. Zero dependencies — it's markdown methodology, not software.
+Git is the default VCS assumption; a non-VCS mutex variant handles projects
+without version control.
 
 ---
 
@@ -157,8 +159,9 @@ software.
 > **explicit, checkable, and recoverable**, not automatic.
 >
 > Also: the mutex model assumes one shared filesystem (see the
-> [worktree pattern](patterns/worktree-parallel.md) for true parallel edits),
-> and templates are English-only.
+> [Non-VCS Mutex](patterns/non-vcs-mutex.md) for projects without git,
+> and the [Worktree Parallel Coding](patterns/worktree-parallel.md) for true
+> parallel edits), and templates are English-only.
 
 ---
 
@@ -190,9 +193,9 @@ No. Zero telemetry, zero network calls, zero data collection.
 | Path | Purpose |
 |---|---|
 | [`SETUP_PROMPT.md`](SETUP_PROMPT.md) | Paste into a new thread → initializes governance (incl. troubleshooting appendix) |
-| [`docs/`](docs/) | The governance files the agent copies into your project and fills in |
+| [`docs/`](docs/) | The governance files the agent copies into your project and fills in (incl. `AGENT_BRIEF.md` — the entry point no agent can skip) |
 | [`patterns/`](patterns/) | Read-only references explaining why each rule exists |
-| [`examples/`](examples/) | Worked examples: initialized START_HERE + live THREADS registry |
+| [`examples/`](examples/) | Worked examples + framework quick-starts: Laravel, Next.js, FastAPI, monorepo |
 | [`integrations/`](integrations/) | Optional extras — e.g., GitHub Actions governance-compliance check |
 
 ---

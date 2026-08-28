@@ -19,6 +19,10 @@
    `CHANGELOG.md`)
 3. **Version consistency** — README version badge matches the latest CHANGELOG entry
 4. **Registry present** — THREADS.md exists (repo root or `docs/`)
+5. **Scope overlap** — no two active threads claim overlapping file scopes
+   (machine-checkable via `integrations/scripts/check-scope-overlap.sh`)
+6. **Checkpoint completeness** — all checkpoints have required sections
+   (machine-checkable via `integrations/scripts/validate-checkpoint.sh`)
 
 Add more project-specific gates as steps — the pattern is: cheap structural
 checks in CI, expensive semantic checks by the verifying thread locally.

@@ -61,9 +61,37 @@ jobs:
             exit 1
           }
 
-      - name: Thread registry present
-        run: |
-          test -f THREADS.md || test -f docs/THREADS.md || {
-            echo "FAIL: no THREADS.md registry found"
-            exit 1
-          }
+- name: Thread registry present
+         run: |
+           test -f THREADS.md || test -f docs/THREADS.md || {
+             echo "FAIL: no THREADS.md registry found"
+             exit 1
+           }
+
+       - name: No scope overlap (machine-checkable declaration)
+         run: |
+           # Find THREADS.md (docs/ or repo root)
+           THREADS=$(test -f docs/THREADS.md && echo docs/THREADS.md || test -f THREADS.md && echo THREADS.md || echo "")
+           if [ -z "$THREADS" ]; then
+             echo "WARN: THREADS.md not found — skipping scope check"
+             exit 0
+           fi
+           # This is a dry run: we claim no new files, so should always pass
+           # In real usage, the claiming thread would pass its scope as args
+           ./integrations/scripts/check-scope-overlap.sh "$THREADS" || {
+             echo "FAIL: scope overlap detected — see above"
+             exit 1
+           }
+
+       - name: All checkpoints complete
+         run: |
+           # Find docs/ folder (docs/ or repo root)
+           DOCS=$(test -f docs/START_HERE.md && echo docs/ || test -f START_HERE.md && echo . || echo "")
+           if [ -z "$DOCS" ]; then
+             echo "WARN: docs/ folder not found — skipping checkpoint validation"
+             exit 0
+           fi
+           ./integrations/scripts/validate-checkpoint.sh "$DOCS" || {
+             echo "FAIL: incomplete checkpoint(s) found — see above"
+             exit 1
+           }

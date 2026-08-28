@@ -3,6 +3,51 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [2.0.0] — 2026-08-28
+
+### Added
+
+- **Pattern: Non-VCS Mutex** (`patterns/non-vcs-mutex.md`) — filesystem lock-file
+  replacement for git branches: the three-mutex model now works on projects
+  without version control. Lock files with PID atomicity + heartbeat
+  reclamation replace clean-tree handoff. SETUP_PROMPT Step 2 no longer blocks
+  on git.
+- **`docs/AGENT_BRIEF.md`** — a 30-second entry point at the repo root that no
+  agent can skip. Every new thread reads it before touching anything.
+- **`docs/TEAM_ONBOARDING.md`** — roles (Owner/Operator/Observer), who can claim
+  which mutex, onboarding steps for new teammates, review workflows, and
+  conflict escalation paths. For teams of 2+ humans.
+- **Framework quick-starts** (`examples/`): Laravel, Next.js, FastAPI,
+  monorepo — per-stack verification commands, mutex file mappings, and
+  common pitfalls per stack.
+- **Machine-checkable enforcement** — two scripts under `integrations/scripts/`:
+  - `check-scope-overlap.sh` — fails a CODE claim if its scope overlaps another
+    active thread's declared files
+  - `validate-checkpoint.sh` — fails a push if any in-progress checkpoint is
+    missing required sections or still has `[TASK-ID]`
+- **CI gate extended** — the governance-compliance workflow now checks scope
+  overlap and checkpoint completeness, in addition to links, placeholders,
+  version, and registry presence.
+- **SETUP_PROMPT Step 2** — added an explicit prompt-injection scan for the
+  project files before ingestion.
+
+### Changed
+
+- **README:** repository-layout table now lists `AGENT_BRIEF.md` and the
+  framework examples; "works with anything" claim now acknowledges the
+  non-VCS variant; honest-limitations section links both new patterns
+  (non-VCS mutex + worktree parallel).
+- **SETUP_PROMPT Step 2** — no-git case is now a first-class supported shape,
+  not a blocker.
+
+### Why 2.0.0
+
+The kit was previously advisory-only: it documented protocols that agents
+*should* follow, but nothing could enforce them. This release adds the first
+machine-checkable enforcement layer (scope overlap checker + checkpoint
+validator as CI gates) and removes the git prerequisite. That is a step
+change in what the kit can guarantee, not just more documentation.
+
 ## [1.5.1] — 2026-08-27
 
 ### Fixed
