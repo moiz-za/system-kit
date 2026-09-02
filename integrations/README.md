@@ -16,6 +16,7 @@
 | [`scripts/heartbeat.sh`](scripts/heartbeat.sh) | Stamp your THREADS.md row (commits count as heartbeats in git mode) |
 | [`scripts/pre-commit-scope-check.sh`](scripts/pre-commit-scope-check.sh) | Git hook: rejects commits outside the thread's declared scope; registry files always allowed |
 | [`scripts/check-scope-overlap.sh`](scripts/check-scope-overlap.sh) | Claim-mode overlap check + `--all` pairwise CI gate; supports old and new THREADS.md formats |
+| [`scripts/check-stale.sh`](scripts/check-stale.sh) | Flags ACTIVE threads with no heartbeat for 2h+ (configurable via `KIT_STALE_HOURS`); `--strict` exits 1 for CI/claim guards; supports both table formats |
 | [`scripts/validate-checkpoint.sh`](scripts/validate-checkpoint.sh) | Fails push if any in-progress checkpoint is incomplete |
 | [`scripts/run-tests.sh`](scripts/run-tests.sh) | Zero-dependency test harness — simulates parallel sessions in filesystem and git modes (34 checks) |
 | [`governance-check.yml`](governance-check.yml) | GitHub Actions workflow: link integrity, placeholder leaks, version consistency, registry presence, pairwise scope gate, checkpoint completeness |
@@ -32,6 +33,9 @@
 
 # stay alive during long stretches without commits
 ./integrations/scripts/heartbeat.sh docs alpha
+
+# spot abandoned threads (any thread may run this; --strict for CI)
+./integrations/scripts/check-stale.sh docs/THREADS.md --strict
 
 # close out (merges isolated trees under MERGE, marks task DONE)
 ./integrations/scripts/release-thread.sh docs alpha "T-041 done: pagination added"

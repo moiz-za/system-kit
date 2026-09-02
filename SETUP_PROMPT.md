@@ -17,6 +17,13 @@ scratch:
 - Re-scan capabilities (STEP 2 checklist below)
 - Update the `Mode:` line in START_HERE §4 if the environment changed
   (e.g. git was added since last setup)
+- **Registry table conversion (pre-v3 installs):** if the Active Threads
+  table uses the old 7-column format (`Shared Files`, no `Scope`/`Tree`),
+  convert it in place to the v3 8-column format: move each row's Shared
+  Files values into `Scope`, set `Tree` to `main`, keep Started/Tasks/
+  Mutexes/Heartbeat/Status as-is, and update the header row. All
+  existing scripts accept both formats, but v3 mode features
+  (worktree/copy isolation) require the new columns.
 - Install only governance components not yet present (scripts, hook)
 - Preserve ALL existing content: tasks, BUILDLOG history, decisions,
   laws — never overwrite them
@@ -172,9 +179,10 @@ create the following structure from scratch:
 Tier 0 (shell present — nearly universal): copy the kit's
 `integrations/scripts/` into the project at `governance-scripts/` (or an
 owner-approved location): `register-thread.sh`, `release-thread.sh`,
-`heartbeat.sh`, `check-scope-overlap.sh`, `pre-commit-scope-check.sh`,
-`lib/registry-lock.sh`. These give every thread — git project or not —
-atomic claims, scope-overlap rejection, and locked ledger edits.
+`heartbeat.sh`, `check-scope-overlap.sh`, `check-stale.sh`,
+`pre-commit-scope-check.sh`, `lib/registry-lock.sh`. These give every
+thread — git project or not — atomic claims, scope-overlap rejection,
+stale-thread detection, and locked ledger edits.
 
 Tier 1 (git present): additionally install the pre-commit scope hook
 AFTER owner approval (STEP 5):

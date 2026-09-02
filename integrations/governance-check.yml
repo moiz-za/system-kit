@@ -95,6 +95,30 @@ jobs:
             exit 1
           }
 
+      - name: No stale threads (heartbeat discipline)
+        run: |
+          THREADS=$(test -f docs/THREADS.md && echo docs/THREADS.md || test -f THREADS.md && echo THREADS.md || echo "")
+          if [ -z "$THREADS" ]; then
+            echo "WARN: THREADS.md not found — skipping stale check"
+            exit 0
+          fi
+          STALE_CHECKER=""
+          for c in integrations/scripts/check-stale.sh \
+                   governance-scripts/check-stale.sh \
+                   check-stale.sh; do
+            [ -f "$c" ] && STALE_CHECKER="$c" && break
+          done
+          if [ -z "$STALE_CHECKER" ]; then
+            echo "WARN: check-stale.sh not installed — skipping stale gate"
+            exit 0
+          fi
+          ./"$STALE_CHECKER" "$THREADS" --strict || {
+            echo "NOTE: stale thread(s) found — this fails CI so abandoned"
+            echo "claims cannot hide. Flag + reclaim per protocol, or heartbeat"
+            echo "the thread if it is still alive (heartbeat.sh)."
+            exit 1
+          }
+
       - name: All checkpoints complete
         run: |
           # Find docs/ folder (docs/ or repo root)

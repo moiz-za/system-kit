@@ -42,3 +42,15 @@ jobs:
           ./integrations/scripts/check-scope-overlap.sh "$TMP/THREADS.md" "src/ui/app.ts" >/dev/null
           echo "OK: v2 format parsed, conflict caught, disjoint clean"
           rm -rf "$TMP"
+
+      - name: Stale checker works on GNU and BSD date
+        run: |
+          TMP="$(mktemp -d)"
+          STALE_TS="$(date -d '3 hours ago' '+%Y-%m-%d %H:%M' 2>/dev/null || date -v-3H '+%Y-%m-%d %H:%M')"
+          printf '## Active Threads\n\n| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |\n|---|---|---|---|---|---|---|---|\n| old | %s | T-1 | CODE | b/ | main | %s | ACTIVE |\n' "$STALE_TS" "$STALE_TS" > "$TMP/THREADS.md"
+          if ./integrations/scripts/check-stale.sh "$TMP/THREADS.md" --strict >/dev/null 2>&1; then
+            echo "FAIL: stale thread not detected on $RUNNER_OS"
+            exit 1
+          fi
+          echo "OK: stale detection works on $RUNNER_OS"
+          rm -rf "$TMP"

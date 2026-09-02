@@ -203,13 +203,39 @@ case "$MODE" in
     ;;
 esac
 
-# Insert the THREADS.md row right after the Active Threads separator
+# Insert the THREADS.md row right after the Active Threads separator.
+# v2 registries (7-column table, no Scope/Tree) are detected from the
+# header row; a main-mode claim upgrades header + separator to the v3
+# columns in passing, so the registry stays machine-readable. Isolated
+# modes (worktree/copy) need the v3 columns up front — refuse on v2
+# rather than half-upgrade.
+REG_HEADER="$(awk '/^\| *Thread/ {print; exit}' "$THREADS")"
+if [ "$MODE" != "main" ] && ! printf '%s' "$REG_HEADER" | grep -q 'Scope'; then
+  fail "registry uses the pre-v3 table format (no Scope/Tree columns) — isolated modes need v3 format. Re-run SETUP_PROMPT (upgrade pass) or convert the Active Threads header to the v3 columns first."
+fi
+UPGRADE="no"
+printf '%s' "$REG_HEADER" | grep -q 'Scope' || UPGRADE="yes"
+
 TMP="$THREADS.tmp"
-awk -v row="| $NAME | $NOW | $TASK | CODE | $SCOPE_LIST | $TREE | $NOW | ACTIVE |" '
+awk -v row="| $NAME | $NOW | $TASK | CODE | $SCOPE_LIST | $TREE | $NOW | ACTIVE |" -v upgrade="$UPGRADE" '
   /^## Active Threads/ { in_active = 1 }
   in_active && /^## / && !/^## Active Threads/ { in_active = 0 }
-  in_active && /^\| *Thread/ { print; getline_sep = 1; next }
-  getline_sep == 1 && /^\| *-+/ { print; print row; getline_sep = 0; next }
+  in_active && /^\| *Thread/ {
+    if (upgrade == "yes") {
+      print "| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |"
+    } else {
+      print
+    }
+    getline_sep = 1; next
+  }
+  getline_sep == 1 && /^\| *-+/ {
+    if (upgrade == "yes") {
+      print "|---|---|---|---|---|---|---|---|"
+    } else {
+      print
+    }
+    print row; getline_sep = 0; next
+  }
   { print }
 ' "$THREADS" > "$TMP"
 

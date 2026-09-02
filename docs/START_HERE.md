@@ -33,7 +33,7 @@ fallback. Skip this section entirely if you use a single paid provider.
      row, then append your row to THREADS.md.
 4. **Work the task** per its spec, inside your declared scope only.
    Heartbeat on resume after breaks (`heartbeat.sh`); commits count as
-   heartbeats in git projects.
+   heartbeats in git projects. `check-stale.sh` spots abandoned threads.
 5. **Close out** — `release-thread.sh <docs-folder> <thread> "<summary>"`
    (merges isolated trees back under MERGE, moves your row to completed,
    marks the task DONE). Then: append BUILDLOG + update PENDING-OWNER.

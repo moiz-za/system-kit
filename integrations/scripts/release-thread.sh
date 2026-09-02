@@ -110,6 +110,11 @@ if [ "$TREE" != "main" ] && [ -d "$TREE" ]; then
 fi
 
 # ---- Move row Active -> Recently Completed ----
+# Ensure a Recently Completed section exists (append one if missing so
+# close-out never fails on a hand-trimmed registry).
+if ! grep -q '^## Recently Completed' "$THREADS"; then
+  printf '\n## Recently Completed\n\n| Thread | Ended | Summary |\n|---|---|---|\n' >> "$THREADS"
+fi
 TMP="$THREADS.tmp"
 awk -v name="$NAME" '
   /^## Active Threads/ { in_active = 1 }

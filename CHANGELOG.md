@@ -3,6 +3,30 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.1.0] — 2026-09-02
+
+### Added
+
+- **`check-stale.sh`** — the last manual protocol step, automated: flags
+  ACTIVE threads with no heartbeat for 2h+ (threshold configurable via
+  `KIT_STALE_HOURS`). `--strict` exits 1 for CI gates and claim guards.
+  Portable epoch parsing (GNU date → BSD date → pure-POSIX arithmetic
+  fallback); supports both v3 and v2 table formats. Wired into the CI
+  governance check and the script-test matrix (both OSes).
+- **v2 → v3 upgrade hardening** — `register-thread.sh` now detects
+  pre-v3 7-column registries: a main-mode claim upgrades the Active
+  Threads header/separator to v3 columns in passing (existing rows
+  untouched and still readable); isolated modes (worktree/copy) are
+  refused on v2 with a clear remediation message instead of writing a
+  malformed row. `release-thread.sh` auto-creates a missing Recently
+  Completed section instead of failing.
+- **E2E upgrade tests** — 10 new harness checks (44 total): stale
+  detection in both formats + fresh-registry pass, full v2-claim →
+  header-upgrade → overlap-enforcement → release lifecycle, and
+  worktree-mode refusal on v2 registries.
+- **README rebuilt premium-grade** — TOC, tier matrix, lifecycle
+  walkthrough, comparison table, and stats row.
+
 ## [3.0.1] — 2026-09-02
 
 ### Fixed

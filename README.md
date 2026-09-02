@@ -5,137 +5,153 @@
 <br>
 
 [![Release](https://img.shields.io/github/v/release/moiz-za/system-kit?label=release&color=success)](https://github.com/moiz-za/system-kit/releases)
-![Version](https://img.shields.io/badge/version-3.0.1-blue)
-[![Stars](https://img.shields.io/github/stars/moiz-za/system-kit?style=social)](https://github.com/moiz-za/system-kit/stargazers)
+[[![Version](https://img.shields.io/badge/version-3.1.0-blue)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-44%2F44-brightgreen)](integrations/scripts/run-tests.sh)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/moiz-za/system-kit?style=social)](https://github.com/moiz-za/system-kit/stargazers)
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blue?logo=github)](https://github.com/moiz-za/system-kit/discussions)
 
-**Copy one folder into any project. Paste one prompt into any agent.
-Get instant multi-thread coordination, task tracking, verification gates,
-and institutional memory.**
+**Governance infrastructure for AI-agent development teams.**
+One folder. One prompt. Multiple agents working in parallel — without
+ever touching each other's work.
+
+[Get started](#quick-start) ·
+[How it works](#how-it-works) ·
+[What you get](#what-you-get) ·
+[FAQ](#faq)
 
 </div>
 
 ---
 
-> [!TIP]
-> **No technical background needed.** Setup is one pasted prompt plus
-> plain-English questions — your AI agent does all the file work.
+## Why System Kit Exists
 
-## Why I Built This
+AI coding agents are force multipliers — until you run more than one.
+Then this happens:
 
-I'm not a professional developer. I build products with AI agents — and I hit
-every failure in the book the hard way: agents inventing code that didn't
-exist, two agents silently destroying each other's work, API keys leaking
-into chat context, broken code reaching production, context resets erasing
-days of decisions, and numbers mislabeled until users noticed.
+| # | Failure | Real-world cost |
+|---|---|---|
+| 1 | Two agents edit the same files | Silent overwrites, lost work, broken builds |
+| 2 | Agent invents APIs that don't exist | Confidently wrong implementations shipped |
+| 3 | Untested code reaches production | Dead pages, broken checkout, angry users |
+| 4 | Context compaction mid-task | Re-researching the same problem twice |
+| 5 | Cumulative data labeled as daily | Users catch the error before you do |
+| 6 | Rotated free-tier models | Quotas burned on routing errors |
+| 7 | API keys read into chat | Secrets sent to third-party servers |
+| 8 | Two agents claim the same task | Both "win", one overwrites the other |
 
-Each mistake cost real time, money, or trust. So I wrote down the system that
-prevents each one — and proved it across **26+ concurrent AI-agent sessions
-with zero code collisions**. System Kit is that system, released so nobody
-else has to learn these lessons the expensive way.
-
-| Failure | What it costs you |
-|---|---|
-| Two agents edit the same files | Lost work, broken builds |
-| Agent invents APIs that don't exist | Confidently wrong implementations |
-| Syntax errors ship untested | Dead pages in production |
-| Context compaction mid-task | Re-researching the same problem twice |
-| Cumulative data shown as daily | Users catch it before you do |
-| Dead models eat your requests | Quotas burned on routing errors |
-| Keys read into chat context | Secrets sent to external servers |
-
----
+Every one of these happened to me. I'm not a professional developer — I
+build products with AI agents, and I learned each lesson the expensive
+way. System Kit is the system that came out of it: **the failure above
+maps to a specific, documented, and where possible machine-enforced
+prevention.** Proven across 26+ concurrent agent sessions with zero
+code collisions.
 
 ## Quick Start
 
-**1. Get the kit** — click the green **Code** button above → **Download ZIP**,
-then unzip it anywhere.
+**You never edit files by hand.** The setup is one pasted prompt.
 
-**2. Open your AI agent in your project** — opencode, Claude Code, Cursor,
-or any agent that can read files and write to your project.
+1. **Get the kit** — green **Code** button → **Download ZIP** → unzip anywhere.
+2. **Open your AI agent in your project** — opencode, Claude Code, Cursor, Codex CLI, or any agent that can read and write files.
+3. **Paste `SETUP_PROMPT.md`** — open it from the unzipped kit, copy the whole file, paste it as your first message, and tell the agent where the kit folder lives.
+4. **Answer plain-English questions** — the agent scans your project, auto-detects what your environment supports (shell? git? CI?), builds the governance files, installs the enforcement scripts, and fills in everything.
+5. **Confirm** — it shows you the finished system and asks: *"Is anything missing?"*
 
-**3. Paste the setup prompt** — open `SETUP_PROMPT.md` from the unzipped kit,
-copy its whole contents, paste as your first message, and tell the agent where
-the kit folder is.
+That's it. Every new agent thread now starts at `docs/START_HERE.md`,
+claims its task through an atomic, machine-checked claim, and works
+inside a declared scope that no other thread can touch.
 
-**4. Answer the questions** — the agent scans your project, asks about it in
-plain English, then builds everything for you: it detects what your
-environment supports (shell? git? GitHub?), copies the kit's `docs/`
-folder into your project, installs the enforcement scripts (atomic
-claims, scope checks) where a shell exists, and fills in every file.
-If your project already has a `docs/` folder with its own documentation,
-the agent keeps governance files in a dedicated subfolder instead of
-mixing them in.
-
-**That's it.** You never edit files by hand. From now on, every new agent
-thread starts at `docs/START_HERE.md` in your project. Re-pasting the
-same setup prompt later safely **upgrades** an existing install in place.
+> **Upgrading an existing install?** Paste the same setup prompt again —
+> it detects the prior install and upgrades in place (registry format
+> conversion included). Nothing is ever rebuilt from scratch.
 
 > [!NOTE]
-> See a [fully initialized START_HERE.md](examples/example-START_HERE.md) and a
-> [live THREADS registry](examples/example-THREADS.md) to know what "done"
-> looks like before you start.
-
----
+> See a [fully initialized START_HERE.md](examples/example-START_HERE.md)
+> and a [live THREADS registry](examples/example-THREADS.md) to know
+> what "done" looks like before you start.
 
 ## How It Works
 
-Every agent thread follows one loop:
+### The thread lifecycle
 
 ```mermaid
 flowchart LR
     A["Read START_HERE"] --> B["Claim a task atomically"]
-    B --> C["Work in your scope or isolated tree"]
-    C --> D["Merge back under MERGE"]
-    D --> E["Close out: log + deregister"]
+    B --> C["Work in your scope<br/>or isolated tree"]
+    C --> D["Merge back<br/>under MERGE"]
+    D --> E["Close out:<br/>log + deregister"]
     E --> A
 ```
 
-Collisions are prevented by the **four-mutex model** — separate locks
-for separate concerns:
+Every thread follows the same loop, enforced at three checkpoints:
+
+| Checkpoint | What's enforced | How |
+|---|---|---|
+| **Claim** | One task = one owner; scopes disjoint from every live thread | `register-thread.sh` under a filesystem lock — racing claims: exactly one wins |
+| **Commit** | Staged files inside the claimer's declared scope only | pre-commit hook (git projects); registry files always allowed |
+| **Merge** | One merge-back at a time; main tree never half-merged twice | `MERGE` mutex serializes all worktree/copy consolidations |
+
+### The four-mutex model
 
 | Mutex | Guards | Hold duration |
 |---|---|---|
-| `CODE` | Declared file scope (parallel holders iff scopes are disjoint) | Task-long |
-| `LEDGER` | Shared tracking docs (append-only, registry-locked) | Seconds per edit |
+| `CODE` | A **declared scope** — parallel holders allowed iff scopes are disjoint | Task-long |
+| `LEDGER` | Shared tracking docs — append-only, registry-locked | Seconds per edit |
 | `DB-CF` | Database / cloud infrastructure | Action-long |
 | `MERGE` | One merge-back of an isolated tree at a time | One merge |
 
-Claims are **atomic and machine-checked** wherever a POSIX shell
-exists: two threads racing to claim one task — exactly one wins; a
-scope overlapping a live thread's scope — refused at claim time and
-rejected at commit time (git projects). Works identically with or
-without git:
+A global lock serializes everything behind the slowest thread. Scoped
+locks let the docs thread, the `src/api/` thread, and the `src/ui/`
+thread all run at once — because their scopes provably don't touch.
+
+### Isolation modes
+
+| Mode | Requires | Use when |
+|---|---|---|
+| `main` | Nothing | Small/short tasks with a cleanly disjoint scope |
+| `worktree` | Git | Long code tasks — own tree, own branch, conflicts deferred to merge |
+| `copy` | Nothing | Same as worktree, for no-git local folders |
+
+### Runs anywhere
 
 | Environment | What you get |
 |---|---|
-| Plain local folder, no git | Scoped parallel CODE, atomic claims, folder-copy isolation |
-| Git repo (local-only or hosted) | All the above + worktree isolation + commit-scope hook |
-| Hosted with CI | All the above + CI governance gates (offered at setup) |
+| Plain local folder, no git, no CI | Atomic claims, scoped parallel CODE, folder-copy isolation, stale detection |
+| Git repo (local or hosted) | + worktree isolation + commit-scope hook |
+| Hosted with CI | + pairwise scope gates, stale-thread gate, checkpoint validation |
 
-Tier detection is automatic — one setup prompt inspects the project
-and installs exactly what the environment supports. No configuration,
-no new questions.
+Detection is automatic at setup — the same one prompt installs exactly
+what your machine supports. No configuration, no new questions.
 
----
+### The failure map
+
+| Failure (from the table above) | Prevention |
+|---|---|
+| 1 — agents overwrite each other | Four-mutex model + atomic claims + scope enforcement |
+| 2 — invented APIs | Verification gate: nothing "done" until tests pass locally |
+| 3 — untested code in prod | Five-step order: local suite → commit → deploy → smoke → owner verify last |
+| 4 — lost decisions | Checkpoint/resume system + append-only ledgers |
+| 5 — mislabeled data | Data-honesty law: cumulative ≠ daily, labels match reality |
+| 6 — dead models | Optional live-probing model rotation |
+| 7 — leaked keys | Secrets never enter tracked files or LLM context |
+| 8 — double task claims | Registry lock — two racers, exactly one row lands |
 
 ## What You Get
 
 | Capability | How |
 |---|---|
-| Multi-thread coordination | Four-mutex concurrency model with scoped parallel CODE and live thread registry |
-| Machine-checked claims | Atomic register script — race-free claims, overlap rejection, commit-scope hook |
-| Task queue with claim/lock/release | Single entry point + priority queue + conflict detection |
-| Verification gates | Local-first testing, five-step order, owner verifies last |
-| Institutional memory | Append-only ledgers + checkpoint/resume system |
+| Multi-thread coordination | Four-mutex model, scoped parallel CODE, live registry |
+| Machine-checked claims | Atomic register script — race-free, overlap-rejecting |
+| Commit-scope enforcement | Pre-commit hook (git) |
+| Stale-thread detection | `check-stale.sh` — abandoned claims can't hide |
+| Task queue with claim/lock/release | Single entry point + priority queue + dependency tracking |
+| Verification gates | Local-first, five-step order, owner verifies last |
+| Institutional memory | Append-only ledgers + checkpoint/resume |
 | Push discipline | Ledger currency required; owner-gated deployments |
-| Key isolation | Credentials handled internally; never exposed to agents or logs |
-| Plain-language owner gate | Decisions in simple English; owner interrupted only when needed |
-| Universal deployment | Same system with git, without git, with CI, or with none of it |
-| Optional model rotation | Live availability probing for rotating free-tier catalogs |
-
----
+| Key isolation | Credentials handled internally, never exposed to agents |
+| Plain-language owner gate | Simple English decisions; owner interrupted only when necessary |
+| Universal deployment | Git or none, CI or none, any stack, any agent |
+| Optional model rotation | Live probing for rotating free-tier catalogs |
 
 ## Patterns Included
 
@@ -155,8 +171,6 @@ Each pattern documents the real failure class it prevents:
 | [Folder-Copy Parallel Coding](patterns/folder-copy-parallel.md) | Long code tasks queuing behind each other (no git) |
 | [Non-VCS Mutex](patterns/non-vcs-mutex.md) | Losing concurrency guarantees without version control |
 
----
-
 ## Who It's For
 
 - **Non-technical founders** building with AI agents who can't afford silent failures
@@ -164,66 +178,92 @@ Each pattern documents the real failure class it prevents:
 - **Small teams** whose agents keep overwriting each other
 - **Anyone on free tiers** juggling rotating model catalogs
 
-Works with any language, framework, host, AI provider, and any number of
-concurrent threads — with git or without, hosted or purely local.
-The concurrency core needs only a POSIX shell; the kit ships machine
-enforcement scripts (atomic claims, scope checks, commit hooks) as
-optional integrations, with a fully documented manual protocol where
-no shell exists.
-
----
-
 ## Honest Limitations
 
 > [!WARNING]
-> Machine enforcement covers claims and (in git projects) commits —
-> it is not runtime surveillance. Where no POSIX shell exists, the kit
+> Machine enforcement covers claims and (in git projects) commits — it
+> is not runtime surveillance. Where no POSIX shell exists, the kit
 > degrades to the documented manual protocol: correct behavior stays
-> **explicit, checkable, and recoverable**, just not automatic. If an
-> agent ignores `THREADS.md` on such a system, nothing physically
-> stops it until the next claim or CI check catches the overlap.
+> **explicit, checkable, and recoverable**, just not automatic.
 >
-> Also: filesystem locking assumes one shared filesystem (see the
-> [Non-VCS Mutex](patterns/non-vcs-mutex.md) for the boundary), and
-> templates are English-only.
-
----
+> Filesystem locking assumes one shared filesystem (see the
+> [Non-VCS Mutex](patterns/non-vcs-mutex.md) for the boundary).
+> Templates are English-only. The kit governs agents that read docs —
+> it cannot constrain a process that never opens them.
 
 ## FAQ
 
-**Do I need to be technical to use this?**
-No. The setup is one pasted prompt plus plain-English questions — your AI
-agent does the file work. You only ever make decisions.
+<details>
+<summary><b>Do I need to be technical to use this?</b></summary>
 
-**How is this different from just having an AGENTS.md?**
-An AGENTS.md states rules; System Kit adds the machinery that makes rules
-operational — a live lock registry with atomic machine-checked claims,
-append-only history, checkpoint format, and an initialization prompt
-that adapts all of it to your project.
+No. Setup is one pasted prompt plus plain-English questions — your AI
+agent does all the file work. You only make decisions.
+</details>
 
-**Does it work with my agent/tool?**
-Yes. It's plain markdown — any LLM agent that can read and write files can
-follow it (opencode, Claude Code, Cursor, Codex CLI, custom agents). Even a
-web-chat agent without file access can initialize the system, because the
-setup prompt embeds the full file-structure spec — but an in-project agent
-gives the best results.
+<details>
+<summary><b>How is this different from just having an AGENTS.md?</b></summary>
 
-**Does it phone home or collect anything?**
-No. Zero telemetry, zero network calls, zero data collection.
+An AGENTS.md states rules; System Kit adds the machinery that makes
+rules operational — a live lock registry with atomic machine-checked
+claims, commit-scope hooks, append-only history, checkpoint format,
+and an initialization prompt that adapts all of it to your project.
+Rules that aren't checkable are just suggestions.
+</details>
 
----
+<details>
+<summary><b>Does it work with my agent / tool?</b></summary>
+
+Yes — it's plain markdown plus optional POSIX scripts. Any LLM agent
+that can read and write files can follow it (opencode, Claude Code,
+Cursor, Codex CLI, custom agents). Even a web-chat agent without file
+access can initialize the system, because the setup prompt embeds the
+full file-structure spec — though an in-project agent gives the best
+results.
+</details>
+
+<details>
+<summary><b>What if two agents ignore the system entirely?</b></summary>
+
+Nothing physically stops an agent that never reads the docs — that's
+the stated limitation, not a hidden one. But enforcement catches up at
+the next checkpoint: a claim attempt (scope conflict), a commit
+(pre-commit hook), a push (CI gates), or a merge (MERGE mutex). The kit
+makes violations **visible and attributable**, where without it they're
+silent.
+</details>
+
+<details>
+<summary><b>Does it phone home or collect anything?</b></summary>
+
+No. Zero telemetry, zero network calls, zero data collection. It's
+markdown and shell scripts you fully own.
+</details>
+
+<details>
+<summary><b>My project doesn't use git. Still worth it?</b></summary>
+
+Yes — that's a first-class mode, not a fallback. You get the full
+concurrency core (atomic claims, scoped parallel CODE, stale detection)
+plus folder-copy isolation standing in for worktrees. Only the
+commit-time hook is git-specific.
+</details>
+
+<details>
+<summary><b>Can I use it across multiple projects?</b></summary>
+
+Yes — one kit download, one setup prompt per project. Each project
+gets its own independent governance instance.
+</details>
 
 ## Repository Layout
 
 | Path | Purpose |
 |---|---|
-| [`SETUP_PROMPT.md`](SETUP_PROMPT.md) | Paste into a new thread → initializes governance (auto-detects git/shell/CI; idempotent re-runs upgrade in place; incl. troubleshooting appendix) |
-| [`docs/`](docs/) | The governance files the agent copies into your project and fills in (incl. `AGENT_BRIEF.md` — the entry point no agent can skip) |
-| [`patterns/`](patterns/) | Read-only references explaining why each rule exists |
+| [`SETUP_PROMPT.md`](SETUP_PROMPT.md) | The one prompt → initializes governance (auto-detects git/shell/CI; idempotent re-runs upgrade in place) |
+| [`docs/`](docs/) | Governance files copied into your project and filled in — incl. `AGENT_BRIEF.md`, the 30-second entry point no agent skips |
+| [`patterns/`](patterns/) | Read-only references: why each rule exists, with real-incident evidence |
 | [`examples/`](examples/) | Worked examples + framework quick-starts: Laravel, Next.js, FastAPI, monorepo |
-| [`integrations/`](integrations/) | Optional extras — enforcement scripts (atomic claims, scope checks, tests) + GitHub Actions governance check |
-
----
+| [`integrations/`](integrations/) | Enforcement scripts (atomic claims, scope/stale checks, 44-check test harness) + CI governance gates |
 
 ## Community
 
@@ -238,7 +278,7 @@ Patterns backed by **real incidents** are the most valuable contributions.
 
 **MIT License** — use it anywhere, adapt it freely.
 
-If System Kit saved your agents from each other, consider starring the repo —
-it helps other teams find it.
+If System Kit saved your agents from each other, consider starring the
+repo — it helps other teams find it.
 
 </div>

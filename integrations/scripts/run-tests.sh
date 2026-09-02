@@ -194,6 +194,44 @@ else
 echo; echo "git mode: SKIPPED (git unavailable)"
 fi
 
+# ================= STALE + v2 UPGRADE =================
+echo; echo "stale-thread checker:"
+STALE_TS="$(date -v-3H '+%Y-%m-%d %H:%M' 2>/dev/null || date -d '3 hours ago' '+%Y-%m-%d %H:%M')"
+FRESH_TS="$(date '+%Y-%m-%d %H:%M')"
+ST="$(new_fixture stale1 no)"
+sed_inplace "s@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | $STALE_TS | T-999 | CODE | src/api/ | main | $STALE_TS | ACTIVE |@" "$ST/docs/THREADS.md"
+t "T11 stale detected (strict)" 1 "$SCRIPT_DIR/check-stale.sh" "$ST/docs/THREADS.md" --strict
+CL="$(new_fixture stale2 no)"
+sed_inplace "s@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | $FRESH_TS | T-999 | CODE | src/api/ | main | $FRESH_TS | ACTIVE |@" "$CL/docs/THREADS.md"
+t "T11b fresh registry passes" 0 "$SCRIPT_DIR/check-stale.sh" "$CL/docs/THREADS.md" --strict
+# v2-format stale row: 7-column table
+V2S="$(mktemp -d)"
+cat > "$V2S/THREADS.md" <<EOF
+## Active Threads
+
+| Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status |
+|---|---|---|---|---|---|---|
+| beta | $STALE_TS | T-9 | CODE | src/api/ | $STALE_TS | ACTIVE |
+EOF
+t "T11c stale detected in v2 format" 1 "$SCRIPT_DIR/check-stale.sh" "$V2S/THREADS.md" --strict
+rm -rf "$V2S"
+
+echo; echo "v2 -> v3 upgrade path:"
+V2="$(new_fixture v2up no)"
+sed_inplace 's@| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |@| Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status |@' "$V2/docs/THREADS.md"
+sed_inplace 's@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | 2026-09-02 09:00 | ACTIVE |@' "$V2/docs/THREADS.md"
+t "T12 claim on v2 registry" 0 "$SCRIPT_DIR/register-thread.sh" "$V2/docs" alpha T-100 main "src/ui/"
+assert "T12a header upgraded to v3" grep -q '| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |' "$V2/docs/THREADS.md"
+assert "T12b v2 row intact + readable" grep -q '| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | 2026-09-02 09:00 | ACTIVE |' "$V2/docs/THREADS.md"
+t "T12c overlap still enforced on v2 row" 1 "$SCRIPT_DIR/register-thread.sh" "$V2/docs" gamma T-102 main "src/api/tasks.ts"
+t "T12d release on upgraded registry" 0 "$SCRIPT_DIR/release-thread.sh" "$V2/docs" alpha "v2-upgrade lifecycle"
+assert "T12e task DONE" grep -q '| T-100 |.*DONE' "$V2/docs/workflow/TASKS.md"
+# isolated mode on still-v2 registry must refuse
+V2B="$(new_fixture v2iso no)"
+sed_inplace 's@| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |@| Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status |@' "$V2B/docs/THREADS.md"
+sed_inplace 's@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | 2026-09-02 09:00 | ACTIVE |@' "$V2B/docs/THREADS.md"
+t "T13 worktree mode REFUSED on v2 registry" 1 "$SCRIPT_DIR/register-thread.sh" "$V2B/docs" iso T-100 worktree "src/x/"
+
 # ================= SUMMARY =================
 echo; echo "----------------------------------------"
 echo "PASS: $PASS  FAIL: $FAIL"

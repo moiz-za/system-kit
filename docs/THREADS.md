@@ -28,6 +28,8 @@
    REGISTRY lock. Restructures need ALL-CLEAR.
 5. **STALE RECLAMATION:** no heartbeat for 2h+ → flag in START_HERE
    notifications → anyone may reclaim after the flag is visible.
+   `check-stale.sh <docs>/THREADS.md` finds stale rows for you
+   (`--strict` fails CI / gates claims).
 6. **DEREGISTER** via `release-thread.sh` when done (merges isolated trees,
    moves row to Recently Completed). Never deregister another live thread.
 
