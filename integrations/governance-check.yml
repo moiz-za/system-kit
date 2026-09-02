@@ -68,6 +68,52 @@ jobs:
             exit 1
           }
 
+      - name: Registry format valid
+        run: |
+          THREADS=$(test -f docs/THREADS.md && echo docs/THREADS.md || test -f THREADS.md && echo THREADS.md || echo "")
+          if [ -z "$THREADS" ]; then
+            echo "WARN: THREADS.md not found — skipping format validation"
+            exit 0
+          fi
+          VALIDATOR=""
+          for c in integrations/scripts/validate-registry.sh \
+                   governance-scripts/validate-registry.sh \
+                   validate-registry.sh; do
+            [ -f "$c" ] && VALIDATOR="$c" && break
+          done
+          if [ -z "$VALIDATOR" ]; then
+            echo "WARN: validate-registry.sh not installed — skipping format gate"
+            exit 0
+          fi
+          ./"$VALIDATOR" "$THREADS" || {
+            echo "FAIL: registry format problems — malformed rows silently bypass enforcement"
+            exit 1
+          }
+
+      - name: BUILDLOG append-only discipline (PR diff)
+        if: github.event_name == 'pull_request'
+        run: |
+          VALIDATOR=""
+          for c in integrations/scripts/check-buildlog.sh \
+                   governance-scripts/check-buildlog.sh \
+                   check-buildlog.sh; do
+            [ -f "$c" ] && VALIDATOR="$c" && break
+          done
+          if [ -z "$VALIDATOR" ]; then
+            echo "WARN: check-buildlog.sh not installed — skipping append-only gate"
+            exit 0
+          fi
+          git fetch --no-tags --depth=50 origin "$GITHUB_BASE_REF" >/dev/null 2>&1 || true
+          BASE_SHA="$(git merge-base origin/"$GITHUB_BASE_REF" HEAD 2>/dev/null || echo "")"
+          if [ -z "$BASE_SHA" ]; then
+            echo "WARN: could not resolve base — comparing to previous commit"
+            ./"$VALIDATOR" . HEAD~1..HEAD && exit 0
+          fi
+          ./"$VALIDATOR" . "$BASE_SHA..HEAD" || {
+            echo "FAIL: BUILDLOG history was rewritten in this PR — corrections must be new entries"
+            exit 1
+          }
+
       - name: No scope overlap (machine-checkable declaration)
         run: |
           # Find THREADS.md (docs/ or repo root)

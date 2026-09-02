@@ -245,7 +245,16 @@ markdown and shell scripts you fully own.
 Yes — that's a first-class mode, not a fallback. You get the full
 concurrency core (atomic claims, scoped parallel CODE, stale detection)
 plus folder-copy isolation standing in for worktrees. Only the
-commit-time hook is git-specific.
+commit-time hook and the BUILDLOG diff check are git-specific.
+</details>
+
+<details>
+<summary><b>What about Windows?</b></summary>
+
+The scripts are POSIX shell — on Windows they run through **git-bash**,
+which ships with git-for-windows and is what the kit's CI matrix tests
+(ubuntu, macos, windows). Pure-CMD/PowerShell environments without git
+fall back to the documented manual protocol.
 </details>
 
 <details>

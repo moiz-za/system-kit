@@ -1,0 +1,87 @@
+# Optional governance watchdog for repos using System Kit.
+# Copy to .github/workflows/governance-watch.yml — see integrations/README.md.
+#
+# Runs daily and after every push. If any governance check fails
+# (overlapping scopes, stale threads, incomplete checkpoints, registry
+# rot), it opens ONE dedicated issue (reusing an existing open one) so
+# the team sees it without watching CI logs. Delete this workflow if
+# you prefer silent CI-only signals.
+
+name: Governance Watch
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # daily 06:00 UTC
+  workflow_dispatch: {}     # manual trigger
+
+permissions:
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Locate docs folder
+        id: docs
+        run: |
+          if [ -f docs/START_HERE.md ]; then echo "dir=docs" >> "$GITHUB_OUTPUT"
+          elif [ -f START_HERE.md ]; then echo "dir=." >> "$GITHUB_OUTPUT"
+          else echo "dir=none" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Run governance health sweep
+        id: health
+        if: steps.docs.outputs.dir != 'none'
+        run: |
+          chmod +x integrations/scripts/*.sh 2>/dev/null || true
+          DOCS="${{ steps.docs.outputs.dir }}"
+          # CI runs long after the threads that wrote the registry —
+          # stale detection false-positives on merged-PR leftovers,
+          # so skip it here. Staleness is the watch's job (below).
+          OUT="$(./integrations/scripts/governance-health.sh "$DOCS" --no-stale 2>&1)"
+          echo "$OUT"
+          if echo "$OUT" | grep -q '\[FAIL\]'; then
+            echo "failed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "failed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stale-thread check (watchdog's core job)
+        id: stale
+        if: steps.docs.outputs.dir != 'none'
+        run: |
+          DOCS="${{ steps.docs.outputs.dir }}"
+          THREADS="$DOCS/THREADS.md"
+          [ -f "$THREADS" ] || { echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          if ./integrations/scripts/check-stale.sh "$THREADS" --strict; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update governance issue
+        if: steps.docs.outputs.dir != 'none' && (steps.health.outputs.failed == 'true' || steps.stale.outputs.skip == 'false')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE="Governance attention needed"
+          # Reuse one open issue so the signal never spams
+          EXISTING="$(gh issue list --state open --search "in:title $TITLE" --json number -q '.[0].number' 2>/dev/null || true)"
+          BODY="$(cat <<'EOF'
+          The governance watchdog found conditions that need a human decision:
+
+          - Run the health sweep for the current detail:
+            \`./integrations/scripts/governance-health.sh <docs-folder>\`
+          - Stale threads: flag in START_HERE notifications, then reclaim
+            per protocol — or heartbeat the thread if it is still alive.
+
+          This issue is managed by the governance-watch workflow. It will
+          stop appearing once the checks pass.
+          EOF
+          )"
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "Watchdog re-checked: still failing ($(date -u '+%Y-%m-%d %H:%M UTC'))."
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
+          fi

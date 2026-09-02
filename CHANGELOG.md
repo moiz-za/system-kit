@@ -3,6 +3,31 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- **`validate-registry.sh`** — THREADS.md format validation: required
+  sections, column counts (both formats), empty required fields, unknown
+  status values, duplicate ACTIVE thread names, heartbeat format. Wired
+  into the CI compliance gate.
+- **`check-buildlog.sh`** — append-only discipline enforcement (git):
+  compares the BUILDLOG across a commit range and fails when existing
+  entries were removed or modified; pure appends pass. Runs on PRs in
+  the CI compliance gate against the merge-base.
+- **`governance-health.sh`** — one-command full sweep: structure,
+  registry format, scope overlap, staleness, checkpoints, law-file
+  completeness, BUILDLOG tracking — pass/warn/fail summary. Recommended
+  at session start and pre-push.
+- **`governance-watch.yml`** (optional) — daily watchdog workflow: opens
+  or updates a single "Governance attention needed" issue when the health
+  sweep or stale check fails, so non-CI-watching teams still see it.
+- **Windows CI** — the script test matrix now runs on
+  `windows-latest` via git-bash alongside Ubuntu and macOS.
+- **Release-cadence policy** — documented in CONTRIBUTING: changes
+  accumulate under `[Unreleased]`; tags/releases are batched, not
+  per-commit.
+
 ## [3.1.0] — 2026-09-02
 
 ### Added

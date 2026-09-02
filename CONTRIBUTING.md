@@ -28,6 +28,20 @@ the need for every pattern in it. Your hard-won lessons are welcome here.
    - The failure class it prevents (if applicable)
    - Evidence from real usage if available
 
+## Release cadence
+
+Commits land on `main` continuously; **versioned releases are batched, not
+per-commit.** Changes accumulate under `## [Unreleased]` in CHANGELOG.md
+and a tag + GitHub Release is cut only when one of these holds:
+
+- A user-visible batch worth announcing has accumulated
+- A breaking change ships
+- A bugfix matters to existing users (ship promptly, even same-day)
+- A public promotion push is imminent (release, then promote)
+
+If your PR changes user-visible behavior, add your entry to
+`## [Unreleased]` — maintainers group entries into the next version.
+
 ## Pattern proposal template
 
 When proposing a new pattern, include:

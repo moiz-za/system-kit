@@ -11,15 +11,19 @@
 | File | What it does |
 |---|---|
 | [`scripts/lib/registry-lock.sh`](scripts/lib/registry-lock.sh) | Shared noclobber filesystem lock — the atomicity primitive |
-| [`scripts/register-thread.sh`](scripts/register-thread.sh) | THE atomic claim: lock → uniqueness → scope-disjoint check → row insert → task flip → identity file. Worktree/copy isolation modes built in |
+| [`scripts/register-thread.sh`](scripts/register-thread.sh) | THE atomic claim: lock → uniqueness → scope-disjoint check → row insert → task flip → identity file. Worktree/copy isolation modes built in; upgrades pre-v3 registries in passing |
 | [`scripts/release-thread.sh`](scripts/release-thread.sh) | Atomic close-out: clean-tree check, MERGE-guarded merge-back, row → Recently Completed, task DONE |
 | [`scripts/heartbeat.sh`](scripts/heartbeat.sh) | Stamp your THREADS.md row (commits count as heartbeats in git mode) |
 | [`scripts/pre-commit-scope-check.sh`](scripts/pre-commit-scope-check.sh) | Git hook: rejects commits outside the thread's declared scope; registry files always allowed |
 | [`scripts/check-scope-overlap.sh`](scripts/check-scope-overlap.sh) | Claim-mode overlap check + `--all` pairwise CI gate; supports old and new THREADS.md formats |
 | [`scripts/check-stale.sh`](scripts/check-stale.sh) | Flags ACTIVE threads with no heartbeat for 2h+ (configurable via `KIT_STALE_HOURS`); `--strict` exits 1 for CI/claim guards; supports both table formats |
+| [`scripts/validate-registry.sh`](scripts/validate-registry.sh) | THREADS.md format validation: sections, column counts, required fields, known statuses, duplicate ACTIVE names, heartbeat format |
+| [`scripts/check-buildlog.sh`](scripts/check-buildlog.sh) | Git-only: fails when a commit range removed or modified existing BUILDLOG entries (append-only discipline) |
+| [`scripts/governance-health.sh`](scripts/governance-health.sh) | One command, full sweep: structure + registry + scope + stale + checkpoints + laws + buildlog, with a pass/warn/fail score |
 | [`scripts/validate-checkpoint.sh`](scripts/validate-checkpoint.sh) | Fails push if any in-progress checkpoint is incomplete |
-| [`scripts/run-tests.sh`](scripts/run-tests.sh) | Zero-dependency test harness — simulates parallel sessions in filesystem and git modes (34 checks) |
-| [`governance-check.yml`](governance-check.yml) | GitHub Actions workflow: link integrity, placeholder leaks, version consistency, registry presence, pairwise scope gate, checkpoint completeness |
+| [`scripts/run-tests.sh`](scripts/run-tests.sh) | Zero-dependency test harness — simulates parallel sessions in filesystem and git modes (44 checks) |
+| [`governance-check.yml`](governance-check.yml) | GitHub Actions PR gate: link integrity, placeholders, version, registry presence + format, pairwise scope, stale, BUILDLOG append-only, checkpoints |
+| [`governance-watch.yml`](governance-watch.yml) | Optional daily watchdog: opens/updates ONE GitHub issue when governance needs attention |
 
 ## The thread lifecycle with scripts
 
@@ -36,6 +40,9 @@
 
 # spot abandoned threads (any thread may run this; --strict for CI)
 ./integrations/scripts/check-stale.sh docs/THREADS.md --strict
+
+# full sweep in one command (session start / pre-push / weekly)
+./integrations/scripts/governance-health.sh docs
 
 # close out (merges isolated trees under MERGE, marks task DONE)
 ./integrations/scripts/release-thread.sh docs alpha "T-041 done: pagination added"
@@ -75,13 +82,26 @@ repositories that keep their registry gitignored (like this kit's own private
    markers outside the kit's own source files
 3. **Version consistency** — README version badge matches the latest
    CHANGELOG entry
-4. **Registry present** — THREADS.md exists (repo root or `docs/`)
+4. **Registry present + format valid** — THREADS.md exists and its rows
+   parse (columns, statuses, no duplicate ACTIVE names)
 5. **Pairwise scope safety** — no two ACTIVE main-tree threads declare
    overlapping scopes (`check-scope-overlap.sh --all`)
-6. **Checkpoint completeness** — all checkpoints have required sections
+6. **No stale threads** — no ACTIVE row without a heartbeat for 2h+
+   (`check-stale.sh --strict`)
+7. **BUILDLOG append-only** — PRs that removed or modified existing
+   BUILDLOG entries fail (`check-buildlog.sh` against the merge-base)
+8. **Checkpoint completeness** — all checkpoints have required sections
 
 Add more project-specific gates as steps — the pattern is: cheap structural
 checks in CI, expensive semantic checks by the verifying thread locally.
+
+## Optional watchdog
+
+`governance-watch.yml` runs daily (and on demand) and opens or updates a
+**single** GitHub issue titled "Governance attention needed" when the
+health sweep or stale check fails — a visible signal for teams that don't
+watch CI. It reuses one issue (never spams) and naturally stops once the
+checks pass. Delete it if you prefer CI-only signals.
 
 ## Testing
 

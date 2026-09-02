@@ -16,8 +16,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Windows runs the POSIX scripts through git-bash (ships with
+        # git-for-windows, preinstalled on GH runners) — the kit's
+        # documented Windows path. GNU/BSD gaps surface here too.
+        exclude:
+          - os: windows-latest
+        include:
+          - os: windows-latest
+            shell: bash
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell || 'bash' }}
     steps:
       - uses: actions/checkout@v4
 
