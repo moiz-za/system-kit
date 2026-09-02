@@ -60,13 +60,17 @@ copy its whole contents, paste as your first message, and tell the agent where
 the kit folder is.
 
 **4. Answer the questions** — the agent scans your project, asks about it in
-plain English, then copies the kit's `docs/` folder into your project and
-fills in every file for you. If your project already has a `docs/` folder
-with its own documentation, the agent keeps governance files in a dedicated
-subfolder instead of mixing them in.
+plain English, then builds everything for you: it detects what your
+environment supports (shell? git? GitHub?), copies the kit's `docs/`
+folder into your project, installs the enforcement scripts (atomic
+claims, scope checks) where a shell exists, and fills in every file.
+If your project already has a `docs/` folder with its own documentation,
+the agent keeps governance files in a dedicated subfolder instead of
+mixing them in.
 
 **That's it.** You never edit files by hand. From now on, every new agent
-thread starts at `docs/START_HERE.md` in your project.
+thread starts at `docs/START_HERE.md` in your project. Re-pasting the
+same setup prompt later safely **upgrades** an existing install in place.
 
 > [!NOTE]
 > See a [fully initialized START_HERE.md](examples/example-START_HERE.md) and a
