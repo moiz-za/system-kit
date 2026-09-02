@@ -136,6 +136,18 @@ else
   report fail laws "AGENTS.md missing"
 fi
 
+# --- security posture ---
+PROJ="$(cd "$DOCS/.." 2>/dev/null && pwd || echo "$DOCS")"
+if [ -f "$SCRIPT_DIR/check-security.sh" ]; then
+  if "$SCRIPT_DIR/check-security.sh" "$PROJ" >/dev/null 2>&1; then
+    report pass security "no credential/injection patterns in scan"
+  else
+    report fail security "findings need review (run check-security.sh for file:line detail)"
+  fi
+elif [ ! -f "$SCRIPT_DIR/check-security.sh" ]; then
+  report warn security "check-security.sh not installed — skipped"
+fi
+
 # --- buildlog tracked (git projects) ---
 if git -C "$DOCS/.." rev-parse --git-dir >/dev/null 2>&1; then
   if git -C "$DOCS/.." ls-files --error-unmatch "$DOCS/workflow/BUILDLOG.md" >/dev/null 2>&1 \

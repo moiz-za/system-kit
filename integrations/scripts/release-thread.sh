@@ -106,6 +106,12 @@ if [ "$TREE" != "main" ] && [ -d "$TREE" ]; then
     done
     rm -rf "$TREE"
   fi
+  # A merge under MERGE proves liveness — stamp it into the row's
+  # heartbeat so the thread cannot be reclaimed mid-close-out even if
+  # the merge took longer than the staleness threshold.
+  if [ -f "$SCRIPT_DIR/heartbeat.sh" ]; then
+    "$SCRIPT_DIR/heartbeat.sh" "$DOCS" "$NAME" >/dev/null 2>&1 || true
+  fi
   registry_release "$DOCS" MERGE
 fi
 

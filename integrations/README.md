@@ -11,17 +11,19 @@
 | File | What it does |
 |---|---|
 | [`scripts/lib/registry-lock.sh`](scripts/lib/registry-lock.sh) | Shared noclobber filesystem lock — the atomicity primitive |
+| [`scripts/lib/scope-match.sh`](scripts/lib/scope-match.sh) | Shared scope matcher (dirs, exact files, globs) — one enforcement answer at claim, CI, and commit time |
 | [`scripts/register-thread.sh`](scripts/register-thread.sh) | THE atomic claim: lock → uniqueness → scope-disjoint check → row insert → task flip → identity file. Worktree/copy isolation modes built in; upgrades pre-v3 registries in passing |
-| [`scripts/release-thread.sh`](scripts/release-thread.sh) | Atomic close-out: clean-tree check, MERGE-guarded merge-back, row → Recently Completed, task DONE |
+| [`scripts/release-thread.sh`](scripts/release-thread.sh) | Atomic close-out: clean-tree check, MERGE-guarded merge-back (with heartbeat stamp so mid-merge threads can't be reclaimed), row → Recently Completed, task DONE |
 | [`scripts/heartbeat.sh`](scripts/heartbeat.sh) | Stamp your THREADS.md row (commits count as heartbeats in git mode) |
 | [`scripts/pre-commit-scope-check.sh`](scripts/pre-commit-scope-check.sh) | Git hook: rejects commits outside the thread's declared scope; registry files always allowed |
-| [`scripts/check-scope-overlap.sh`](scripts/check-scope-overlap.sh) | Claim-mode overlap check + `--all` pairwise CI gate; supports old and new THREADS.md formats |
+| [`scripts/check-scope-overlap.sh`](scripts/check-scope-overlap.sh) | Claim-mode overlap check + `--all` pairwise CI gate; supports old and new THREADS.md formats and globs |
 | [`scripts/check-stale.sh`](scripts/check-stale.sh) | Flags ACTIVE threads with no heartbeat for 2h+ (configurable via `KIT_STALE_HOURS`); `--strict` exits 1 for CI/claim guards; supports both table formats |
 | [`scripts/validate-registry.sh`](scripts/validate-registry.sh) | THREADS.md format validation: sections, column counts, required fields, known statuses, duplicate ACTIVE names, heartbeat format |
 | [`scripts/check-buildlog.sh`](scripts/check-buildlog.sh) | Git-only: fails when a commit range removed or modified existing BUILDLOG entries (append-only discipline) |
-| [`scripts/governance-health.sh`](scripts/governance-health.sh) | One command, full sweep: structure + registry + scope + stale + checkpoints + laws + buildlog, with a pass/warn/fail score |
+| [`scripts/check-security.sh`](scripts/check-security.sh) | Security posture scan: high-confidence credential patterns, prompt-injection markers, untracked secret stores. Reports file:line only — values never echoed. Exceptions via `.kit-security-allowlist` (one path per line) for files whose job is to document such patterns |
+| [`scripts/governance-health.sh`](scripts/governance-health.sh) | One command, full sweep: structure + registry + scope + stale + checkpoints + laws + security + buildlog, with a pass/warn/fail score |
 | [`scripts/validate-checkpoint.sh`](scripts/validate-checkpoint.sh) | Fails push if any in-progress checkpoint is incomplete |
-| [`scripts/run-tests.sh`](scripts/run-tests.sh) | Zero-dependency test harness — simulates parallel sessions in filesystem and git modes (44 checks) |
+| [`scripts/run-tests.sh`](scripts/run-tests.sh) | Zero-dependency test harness — simulates parallel sessions in filesystem and git modes (53 checks) |
 | [`governance-check.yml`](governance-check.yml) | GitHub Actions PR gate: link integrity, placeholders, version, registry presence + format, pairwise scope, stale, BUILDLOG append-only, checkpoints |
 | [`governance-watch.yml`](governance-watch.yml) | Optional daily watchdog: opens/updates ONE GitHub issue when governance needs attention |
 
@@ -88,9 +90,12 @@ repositories that keep their registry gitignored (like this kit's own private
    overlapping scopes (`check-scope-overlap.sh --all`)
 6. **No stale threads** — no ACTIVE row without a heartbeat for 2h+
    (`check-stale.sh --strict`)
-7. **BUILDLOG append-only** — PRs that removed or modified existing
+7. **Security posture** — no credential patterns or prompt-injection
+   markers in tracked files (`check-security.sh`; file:line only, values
+   never echoed)
+8. **BUILDLOG append-only** — PRs that removed or modified existing
    BUILDLOG entries fail (`check-buildlog.sh` against the merge-base)
-8. **Checkpoint completeness** — all checkpoints have required sections
+9. **Checkpoint completeness** — all checkpoints have required sections
 
 Add more project-specific gates as steps — the pattern is: cheap structural
 checks in CI, expensive semantic checks by the verifying thread locally.

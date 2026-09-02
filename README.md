@@ -5,8 +5,8 @@
 <br>
 
 [![Release](https://img.shields.io/github/v/release/moiz-za/system-kit?label=release&color=success)](https://github.com/moiz-za/system-kit/releases)
-[[![Version](https://img.shields.io/badge/version-3.1.0-blue)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-44%2F44-brightgreen)](integrations/scripts/run-tests.sh)
+[[![Version](https://img.shields.io/badge/version-3.2.0-blue)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-53%2F53-brightgreen)](integrations/scripts/run-tests.sh)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/moiz-za/system-kit?style=social)](https://github.com/moiz-za/system-kit/stargazers)
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blue?logo=github)](https://github.com/moiz-za/system-kit/discussions)
@@ -142,8 +142,10 @@ what your machine supports. No configuration, no new questions.
 |---|---|
 | Multi-thread coordination | Four-mutex model, scoped parallel CODE, live registry |
 | Machine-checked claims | Atomic register script — race-free, overlap-rejecting |
-| Commit-scope enforcement | Pre-commit hook (git) |
+| Commit-scope enforcement | Pre-commit hook (git); glob scopes (`src/**/*.test.ts`) enforced identically at claim, CI, and commit |
 | Stale-thread detection | `check-stale.sh` — abandoned claims can't hide |
+| Security posture | `check-security.sh` — credential + injection-marker scan; values never echoed |
+| One-command health | `governance-health.sh` — structure, registry, scope, stale, checkpoints, laws, security, buildlog |
 | Task queue with claim/lock/release | Single entry point + priority queue + dependency tracking |
 | Verification gates | Local-first, five-step order, owner verifies last |
 | Institutional memory | Append-only ledgers + checkpoint/resume |

@@ -7,8 +7,18 @@ the need for every pattern in it. Your hard-won lessons are welcome here.
 
 - **New patterns** that prevent a documented, reproducible failure class
 - **Improvements** to existing templates or protocols
-- **Translations** of the core documentation
+- **Translations** of the core documentation — see the translation
+  workflow below before starting
 - **Bug fixes** in the docs templates (typos, unclear instructions, broken examples)
+
+## Translation workflow
+
+Templates must stay structurally identical across languages so scripts
+and examples keep working: translate wording only, never table formats,
+column names-as-identifiers (Thread/Scope/Tree/ACTIVE/OPEN/DONE), file
+names, or section headings that scripts grep for. Put translations in
+`docs/<lang>/` (e.g. `docs/es/`) mirroring the `docs/` layout, and open
+a Discussion first so two people don't translate the same language.
 
 ## What we don't accept
 

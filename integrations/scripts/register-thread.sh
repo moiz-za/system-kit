@@ -36,6 +36,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/lib/registry-lock.sh"
+. "$SCRIPT_DIR/lib/scope-match.sh"
 
 usage() {
   cat <<EOF
@@ -100,14 +101,9 @@ active_rows() { # emits "name|scope|tree" per ACTIVE row
 }
 
 # True (0) if claimed path $1 overlaps owned path $2.
-# Directory scopes end with / — containment is a simple prefix match.
+# Supports directory prefixes and globs (src/**/*.ts) via scope-match.
 overlap() {
-  local claim="$1" owner="$2"
-  { [ -z "$claim" ] || [ -z "$owner" ]; } && return 1
-  [ "$claim" = "$owner" ] && return 0
-  case "$claim" in "$owner"*) return 0 ;; esac
-  case "$owner"  in "$claim"*) return 0 ;; esac
-  return 1
+  scope_entry_overlaps_entry "$1" "$2"
 }
 
 SCOPE_LIST="$*"

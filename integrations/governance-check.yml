@@ -165,6 +165,26 @@ jobs:
             exit 1
           }
 
+      - name: Security posture scan (credential / injection patterns)
+        run: |
+          PROJ="."
+          SCANNER=""
+          for c in integrations/scripts/check-security.sh \
+                   governance-scripts/check-security.sh \
+                   check-security.sh; do
+            [ -f "$c" ] && SCANNER="$c" && break
+          done
+          if [ -z "$SCANNER" ]; then
+            echo "WARN: check-security.sh not installed — skipping security gate"
+            exit 0
+          fi
+          ./"$SCANNER" "$PROJ" || {
+            echo "FAIL: security findings — see file:line above. Secrets belong"
+            echo "in env vars / secret managers; injection-marker files are"
+            echo "untrusted input requiring validation."
+            exit 1
+          }
+
       - name: All checkpoints complete
         run: |
           # Find docs/ folder (docs/ or repo root)

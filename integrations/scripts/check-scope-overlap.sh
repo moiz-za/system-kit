@@ -24,6 +24,9 @@
 
 set -u
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$SCRIPT_DIR/lib/scope-match.sh" ] && . "$SCRIPT_DIR/lib/scope-match.sh"
+
 usage() {
   cat <<EOF
 Usage: $0 <threads.md> <file...> | <threads.md> --all
@@ -60,7 +63,12 @@ get_active() {
     }' "$THREADS_FILE"
 }
 
-overlap() { # $1 claimed path, $2 owner path (dir scopes end with /)
+overlap() { # $1 claimed path, $2 owner path (dirs end with /; globs supported)
+  if type scope_entry_overlaps_entry >/dev/null 2>&1; then
+    scope_entry_overlaps_entry "$1" "$2"
+    return
+  fi
+  # fallback (standalone use without lib/scope-match.sh): plain prefix
   local claim="$1" owner="$2"
   { [ -z "$claim" ] || [ -z "$owner" ]; } && return 1
   [ "$claim" = "$owner" ] && return 0

@@ -19,6 +19,9 @@
 
 set -u
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$SCRIPT_DIR/lib/scope-match.sh" ] && . "$SCRIPT_DIR/lib/scope-match.sh"
+
 GITDIR="$(git rev-parse --git-dir 2>/dev/null)"
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 
@@ -56,12 +59,16 @@ while IFS= read -r staged; do
     .kit-thread|docs/THREADS.md|docs/workflow/*|docs/CHECKPOINTS/*|docs/.locks/*) continue ;;
   esac
   inside=0
-  for s in $SCOPE; do
-    case "$s" in
-      */) case "$staged" in "$s"*) inside=1; break ;; esac ;;
-      *)  [ "$staged" = "$s" ] && { inside=1; break; } ;;
-    esac
-  done
+  if type scope_list_contains_path >/dev/null 2>&1; then
+    if scope_list_contains_path "$SCOPE" "$staged"; then inside=1; fi
+  else
+    for s in $SCOPE; do
+      case "$s" in
+        */) case "$staged" in "$s"*) inside=1; break ;; esac ;;
+        *)  [ "$staged" = "$s" ] && { inside=1; break; } ;;
+      esac
+    done
+  fi
   [ "$inside" -eq 1 ] || { echo "[kit] OUT OF SCOPE: '$staged' not in '$THREAD' scope: $SCOPE"; fail=1; }
 done < <(git diff --cached --name-only)
 

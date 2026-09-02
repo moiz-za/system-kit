@@ -3,30 +3,48 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [3.2.0] — 2026-09-02
 
 ### Added
 
-- **`validate-registry.sh`** — THREADS.md format validation: required
-  sections, column counts (both formats), empty required fields, unknown
-  status values, duplicate ACTIVE thread names, heartbeat format. Wired
-  into the CI compliance gate.
-- **`check-buildlog.sh`** — append-only discipline enforcement (git):
-  compares the BUILDLOG across a commit range and fails when existing
-  entries were removed or modified; pure appends pass. Runs on PRs in
-  the CI compliance gate against the merge-base.
-- **`governance-health.sh`** — one-command full sweep: structure,
-  registry format, scope overlap, staleness, checkpoints, law-file
-  completeness, BUILDLOG tracking — pass/warn/fail summary. Recommended
-  at session start and pre-push.
-- **`governance-watch.yml`** (optional) — daily watchdog workflow: opens
-  or updates a single "Governance attention needed" issue when the health
-  sweep or stale check fails, so non-CI-watching teams still see it.
-- **Windows CI** — the script test matrix now runs on
-  `windows-latest` via git-bash alongside Ubuntu and macOS.
-- **Release-cadence policy** — documented in CONTRIBUTING: changes
-  accumulate under `[Unreleased]`; tags/releases are batched, not
-  per-commit.
+- **Glob scopes** — scope declarations now support `src/**/*.test.ts` and
+  `docs/*.md` (`**` crosses directory levels, `*` stays within one). A new
+  shared matcher library (`lib/scope-match.sh`) is used by every scope
+  consumer — register claims, the CI `--all` pairwise gate, and the
+  pre-commit hook — so a glob scope is enforced identically at claim,
+  CI, and commit time. Glob-vs-anything overlap is checked
+  conservatively: any plausibly shared path blocks the second claim.
+- **`check-security.sh`** — machine-checkable security posture scan:
+  high-confidence credential patterns (AWS keys, private-key blocks,
+  literal secret assignments), classic prompt-injection markers, and
+  untracked secret stores. Reports file:line ONLY — matched values are
+  never echoed into logs or LLM context. Wired into the CI compliance
+  gate and the health sweep.
+- **Merge-back heartbeat** — `release-thread.sh` stamps the row's
+  heartbeat after a MERGE-guarded merge-back, so a thread whose merge
+  legitimately took longer than the staleness threshold cannot be
+  reclaimed mid-close-out.
+- **CI security gate + matrix** — the compliance workflow gained a
+  security step; the script-test matrix covers ubuntu, macos, and
+  windows (git-bash).
+- **Translation workflow** documented in CONTRIBUTING — translations
+  live in `docs/<lang>/`, structural elements (table formats, machine-
+  read identifiers, file names) stay identical.
+
+### Changed
+
+- **`governance-health.sh`** sweep now includes the security posture
+  check alongside structure/registry/scope/stale/checkpoints/laws/
+  buildlog.
+- Test harness grew to **53 checks** (glob claim/overlap/block E2E,
+  scope-match library unit checks, security findings/clean/sanitizer).
+
+### Previously in this batch (see 3.1.0-era [Unreleased] work)
+
+- `validate-registry.sh`, `check-buildlog.sh`, `governance-health.sh`,
+  `governance-watch.yml` daily watchdog, Windows CI leg, and the
+  release-cadence policy in CONTRIBUTING — all first landed on main in
+  the [Unreleased] batch and are included in this release.
 
 ## [3.1.0] — 2026-09-02
 

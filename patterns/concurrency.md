@@ -17,6 +17,13 @@ threads may hold CODE **simultaneously iff their scopes are disjoint** —
 verified at claim time (register script / overlap checker) and at commit
 time (pre-commit hook, git projects).
 
+Scope entries: directories end with `/` (`src/api/`), files are exact
+paths, and globs are supported (`src/**/*.test.ts`, `docs/*.md` — `**`
+crosses directory levels, `*` stays within one). Glob overlap is checked
+conservatively: since a glob claims a wide, hard-to-enumerate area, any
+plausibly shared path blocks the second claim. Wide globs are a
+convenience for claiming — narrow scopes are a courtesy to everyone else.
+
 **Why scoped:** a single global CODE serializes ALL code work behind the
 slowest thread. Two tasks touching `src/api/` and `src/ui/` are provably
 independent — the scope declaration makes that proof machine-checkable

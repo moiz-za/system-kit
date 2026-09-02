@@ -1,0 +1,7 @@
+# check-security.sh allowlist — files whose PURPOSE is to contain
+# example injection strings or credential-pattern documentation.
+# One path per line; # comments allowed.
+patterns/prompt-injection-defense.md
+patterns/security-checklist.md
+SETUP_PROMPT.md
+integrations/scripts/run-tests.sh

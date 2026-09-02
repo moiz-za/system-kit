@@ -181,11 +181,13 @@ Tier 0 (shell present — nearly universal): copy the kit's
 owner-approved location): `register-thread.sh`, `release-thread.sh`,
 `heartbeat.sh`, `check-scope-overlap.sh`, `check-stale.sh`,
 `validate-registry.sh`, `check-buildlog.sh` (git projects),
-`governance-health.sh`, `pre-commit-scope-check.sh`, `lib/registry-lock.sh`.
-These give every thread — git project or not — atomic claims, scope-overlap
-rejection, stale-thread detection, format validation, and locked ledger
-edits. `governance-health.sh <docs-folder>` runs the full sweep in one
-command — recommend running it at session start and before pushes.
+`check-security.sh`, `governance-health.sh`, `pre-commit-scope-check.sh`,
+and `lib/` (registry-lock + scope-match). These give every thread — git
+project or not — atomic claims, scope-overlap rejection (incl. glob
+scopes), stale-thread detection, format validation, security posture
+scans, and locked ledger edits. `governance-health.sh <docs-folder>`
+runs the full sweep in one command — recommend running it at session
+start and before pushes.
 
 Tier 1 (git present): additionally install the pre-commit scope hook
 AFTER owner approval (STEP 5):

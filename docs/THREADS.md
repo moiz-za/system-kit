@@ -11,8 +11,10 @@
 1. **REGISTER** before working, via the claim script:
    `register-thread.sh <docs-folder> <thread> <task-id> <mode> <scope...>`
    - **Scope** = every file/dir this thread may write (dirs end with `/`).
-     Two threads may hold CODE simultaneously **only if scopes are disjoint** —
-     verified machine-side at claim time.
+     Globs allowed: `src/**/*.test.ts` (** = any depth, * = one segment).
+     Two threads may hold CODE simultaneously **only if scopes are
+     disjoint** — verified machine-side at claim time (globs are checked
+     conservatively: any plausibly shared path blocks the second claim).
    - **Mode** = `main` (shared tree) · `worktree` (git isolation) ·
      `copy` (no-git isolation)
    - No script available? Follow the same rules by hand: check every ACTIVE
