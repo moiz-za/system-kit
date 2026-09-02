@@ -10,8 +10,14 @@ Its single job: prevent agents from colliding, losing work, or shipping untested
 ## The loop (repeat every session)
 
 1. **Read** `docs/START_HERE.md`
-2. **Claim** your task in `docs/THREADS.md`
-3. **Work.** When done: update `docs/workflow/BUILDLOG.md`, update `docs/workflow/PENDING-OWNER.md`, deregister from `docs/THREADS.md`
+2. **Claim** your task atomically:
+   `register-thread.sh <docs-folder> <thread> <task-id> <mode> <scope...>`
+   — scope must be disjoint from every ACTIVE main-tree thread (the script
+   verifies this; your claim is refused on overlap)
+3. **Work.** Stay inside your declared scope. Long code task? Use an
+   isolated mode — `worktree` (git) or `copy` (no git).
+4. **Close out.** `release-thread.sh <docs-folder> <thread> "<summary>"`,
+   then update `docs/workflow/BUILDLOG.md` and `docs/workflow/PENDING-OWNER.md`.
 
 ## The three laws that cannot be broken
 
@@ -21,7 +27,7 @@ Its single job: prevent agents from colliding, losing work, or shipping untested
 
 ## Before you claim anything
 
-- Check `docs/THREADS.md` for active threads and held mutexes
+- Check `docs/THREADS.md` for active threads and their declared scopes
 - Check `docs/workflow/PENDING-OWNER.md` for decisions that unblock tasks
 - Check `docs/AGENTS.md` for the full law set
 

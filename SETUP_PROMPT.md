@@ -9,6 +9,19 @@ You are initializing a governance system for this project. Follow these steps
 in exact order. Do not skip steps. Do not assume anything not stated here or
 discovered during scanning.
 
+## STEP 0 — UPGRADE CHECK (idempotent re-runs)
+
+If governance files (START_HERE.md / THREADS.md) already exist in this
+project, this is an UPGRADE, not a fresh setup. Do NOT rebuild from
+scratch:
+- Re-scan capabilities (STEP 2 checklist below)
+- Update the `Mode:` line in START_HERE §4 if the environment changed
+  (e.g. git was added since last setup)
+- Install only governance components not yet present (scripts, hook)
+- Preserve ALL existing content: tasks, BUILDLOG history, decisions,
+  laws — never overwrite them
+- Present a short upgrade report to the owner, then jump to STEP 5
+
 ## STEP 1 — EXISTING DOCUMENTATION CHECK
 
 Ask the user:
@@ -51,6 +64,21 @@ Also check:
 - Is there a pre-commit hook configured?
 - What's the git remote / hosting situation?
 
+### Capability detection (fill by INSPECTION, never by asking)
+
+Record these three facts — they decide which concurrency components get
+installed in STEP 4. Detection is by direct observation:
+
+| Check | How to detect | Activates |
+|---|---|---|
+| POSIX shell | `bash --version` or `sh` succeeds | Tier 0: claim/lock scripts installable |
+| Git | `.git/` present (`git rev-parse` succeeds; local-only counts — no remote needed) | Tier 1: worktree mode default + pre-commit scope hook |
+| Remote / CI | `git remote -v` non-empty, or `.github/workflows/` exists | Tier 2: offer CI governance check at STEP 5 |
+
+A project with no shell degrades to the documented manual protocol —
+the rules are identical, only machine enforcement is absent. Say so
+plainly if that's the case here.
+
 ### Special project shapes
 
 - **Empty / greenfield project:** skip deep scanning; ask the owner what
@@ -67,12 +95,11 @@ Also check:
   and record "verification = lint + build only" in START_HERE §4 until a
   test suite exists. Do NOT install anything without owner approval.
 - **No git repository yet:** do NOT treat as a blocker. The kit works without
-  a VCS using the **Non-VCS Mutex variant** (`patterns/non-vcs-mutex.md`):
-  filesystem lock files replace branches, and the BUILDLOG replaces `git log`.
+  a VCS using the **filesystem-only mode** (`patterns/non-vcs-mutex.md`):
+  the same claim scripts, locks, and scoped-CODE parallelism, with folder-copy
+  isolation (`patterns/folder-copy-parallel.md`) standing in for worktrees.
   Use that path automatically when the project has no version control.
-  (If you ever need true parallel source edits without VCS, the
-  [Worktree Parallel Coding](patterns/worktree-parallel.md) pattern is
-  git-only; flag this constraint in the project setup notes.)
+  Record `Mode: FILESYSTEM` in START_HERE §4.
 
 ## STEP 3 — OWNER QUESTIONS
 
@@ -122,15 +149,16 @@ create the following structure from scratch:
 > section layouts — match these so the worked examples remain applicable.
 >
 > - **START_HERE.md** — §1 THE RULE (claim loop) · §2 CONFLICT & NOTIFY ·
->   §3 TASK QUEUE (table) · §4 LAWS DIGEST + verification commands ·
->   §5 NOTIFICATIONS (append-only table). Prepend the optional model-selection
->   block only for multi-provider projects.
+>   §3 TASK QUEUE (table) · §4 LAWS DIGEST + Mode line + verification
+>   commands · §5 NOTIFICATIONS (append-only table). Prepend the optional
+>   model-selection block only for multi-provider projects.
 > - **AGENTS.md** — Article I Universal Laws (the ten below) · Article II
->   Concurrency Protocol · Article III Domain Laws (from owner answers) ·
+>   Concurrency Protocol (four mutexes: scoped CODE, LEDGER, DB-CF, MERGE;
+>   isolation modes) · Article III Domain Laws (from owner answers) ·
 >   Article IV Amendment Process + Amendment Log table.
 > - **THREADS.md** — Protocol rules · Active Threads table
->   (Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status) ·
->   Recently Completed table.
+>   (Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status)
+>   · Recently Completed table.
 > - **workflow/TASKS.md** — Task Queue table (ID | Task | Spec | Needs | Deps |
 >   Status) + Completed table.
 > - **workflow/BUILDLOG.md** — append-only table (Date | Task/ID | Change |
@@ -138,6 +166,26 @@ create the following structure from scratch:
 > - **workflow/PENDING-OWNER.md** — Open Decisions table + Pending Actions table.
 > - **CHECKPOINTS/_TEMPLATE.md** — Task · Where You Stopped · Files Touched ·
 >   Key Decisions · Context the Next Thread Needs · Verification State.
+
+### Concurrency component install (per detected capabilities)
+
+Tier 0 (shell present — nearly universal): copy the kit's
+`integrations/scripts/` into the project at `governance-scripts/` (or an
+owner-approved location): `register-thread.sh`, `release-thread.sh`,
+`heartbeat.sh`, `check-scope-overlap.sh`, `pre-commit-scope-check.sh`,
+`lib/registry-lock.sh`. These give every thread — git project or not —
+atomic claims, scope-overlap rejection, and locked ledger edits.
+
+Tier 1 (git present): additionally install the pre-commit scope hook
+AFTER owner approval (STEP 5):
+`cp governance-scripts/pre-commit-scope-check.sh .git/hooks/pre-commit
+&& chmod +x .git/hooks/pre-commit`. Record `Mode: GIT` in START_HERE §4.
+
+Tier 2 (remote/CI present): offer `governance-check.yml` at STEP 5
+(recommended default: yes). Copy to `.github/workflows/` on approval.
+
+No shell at all: skip script install; note in START_HERE that claims
+follow the manual protocol documented in THREADS.md.
 
 Fill every file using:
 - Universal patterns (defined below)
@@ -170,15 +218,21 @@ Fill every file using:
 
 ### Concurrency protocol (include in every THREADS.md):
 
-Three mutexes prevent collisions between parallel threads:
-- **CODE**: exclusive right to edit source files (one thread at a time)
-- **LEDGER**: short hold on shared tracking files (append-only edits only)
+Four mutexes prevent collisions between parallel threads:
+- **CODE**: exclusive write to a DECLARED SCOPE — multiple holders allowed
+  iff scopes are disjoint (machine-verified at claim; commit-time hook in
+  git projects)
+- **LEDGER**: append-only edits to own rows in shared tracking files,
+  under the REGISTRY filesystem lock
 - **DB-CF**: database/schema/cloud-infrastructure changes
+- **MERGE**: one merge-back of an isolated tree at a time
 
 Rules:
-- Register before working; deregister when done
+- Claim before working (atomic claim script when available); deregister when done
+- Isolation modes: `main` (shared tree, disjoint scopes) · `worktree` (git)
+  · `copy` (no-git)
 - Never touch another thread's owned files
-- Stale threads (>4h no heartbeat) may be reclaimed after flagging
+- Stale threads (no heartbeat for 2h+) may be reclaimed after flagging
 - Shared file restructures require ALL-CLEAR (zero other registered threads)
 
 ### Verification standard (include in START_HERE.md):
@@ -194,6 +248,11 @@ Present the initialized system to the owner:
 - Show the file tree
 - Show the first task queue entry as example
 - Confirm all domain laws are captured correctly
+- Report the detected Mode (GIT / FILESYSTEM / manual) in plain English
+- If git was detected: confirm installing the pre-commit scope hook
+  (recommended default: yes)
+- If a remote/CI was detected: confirm installing the governance-check
+  workflow (recommended default: yes)
 - Ask: "Is anything missing or incorrect?"
 
 After owner confirms:
@@ -227,7 +286,9 @@ stop and correct before proceeding.
 | 4 | Deleting "duplicate" files during integration | Destroys history; violates append-only spirit | Move + merge only; originals preserved |
 | 5 | Writing verification commands you never ran | Broken gate blocks every future commit | Run each command once; record real output status |
 | 6 | Building all files silently, then dumping them at once | Owner can't course-correct mid-setup | Present the integration manifest after Step 1 and the full system at Step 5 — never build everything silently |
-| 7 | Weakening the three-mutex model to one lock ("simplification") | Docs-only threads serialize behind code work | Preserve CODE/LEDGER/DB-CF separation always |
+| 7 | Weakening the four-mutex model ("simplification") | Docs-only threads serialize behind code work; merges interleave | Preserve CODE/LEDGER/DB-CF/MERGE separation always |
 | 8 | Copying example content from this kit into live files | Placeholder/example text pollutes the real system | Kit docs files are structure; fill from THIS project's reality |
 | 9 | Reading credential files to "check provider health" | Secrets enter LLM context | Use key-safe tooling; sanitized results only |
 | 10 | Marking the system LIVE without owner confirmation | Unvalidated governance becomes binding law | Step 5 confirmation is mandatory, not optional |
+| 11 | Installing the pre-commit hook before owner approval | Surprises the owner with enforced commits | Hook install is a STEP 5 confirmation item, always |
+| 12 | Skipping scope columns "for simple projects" | Parallel CODE claims become uncheckable | Scope is mandatory — a whole-repo scope is fine, vagueness is not |

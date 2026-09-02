@@ -32,22 +32,27 @@ Guaranteed fallback: anthropic/claude-sonnet (paid — always available)
 ## §1 THE RULE (read once, follow always)
 
 0. **SELF-CLEAN:** while in THREADS.md, move any CLOSED rows down to completed.
-1. **Open THREADS.md** — check active threads, held mutexes, heartbeats.
+1. **Open THREADS.md** — check active threads, held mutexes, scopes, heartbeats.
 2. **Scan the task queue** for first OPEN task that:
    - is not locked by another thread
    - has no unmet dependency
-   - requires only mutexes currently free
-3. **CLAIM it** — register your row in THREADS.md BEFORE touching files.
-4. **Work the task** per its spec. Heartbeat on resume after >1h.
-5. **Close out:** tick done + append BUILDLOG + update PENDING-OWNER +
-   deregister from THREADS.
+   - has a scope that doesn't overlap any ACTIVE main-tree thread
+3. **CLAIM it atomically** — BEFORE touching files:
+   `register-thread.sh docs <thread> <task-id> <mode> <scope...>`
+   (long code task? use `worktree` mode — this project has git)
+4. **Work the task** per its spec, inside your declared scope only.
+   Heartbeat on resume after breaks; commits count as heartbeats.
+5. **Close out:** `release-thread.sh` (merges isolated trees, marks DONE) +
+   append BUILDLOG + update PENDING-OWNER.
 
 ## §2 CONFLICT & NOTIFY RULE
 
 - Task LOCKED by live thread → DO NOT START. Post notification + report.
-- Stale lock (>4h) → flag, then reclaim.
+- Scope overlaps an ACTIVE main-tree thread → DO NOT CLAIM — different
+  task, wait, or worktree mode.
+- Stale lock (no heartbeat for 2h+) → flag, then reclaim.
 - Never touch another live thread's owned files.
-- Shared-ledger edits: append-only, own rows only.
+- Shared-ledger edits: append-only, own rows only, under the REGISTRY lock.
 - Restructures need ALL-CLEAR.
 
 ## §3 TASK QUEUE
@@ -84,11 +89,13 @@ npm test                            # unit + integration suite
 npm run build                       # must compile clean
 ```
 
+Mode: GIT (worktree isolation + commit hooks)
+
 Deploy: push to `main` → CI deploys staging → owner approves prod promotion.
 
 ## §5 NOTIFICATIONS (append-only)
 
 | When | Thread | Note |
 |---|---|---|
-| 2026-08-26 09:14 | gamma | Flagged beta lock stale (>4h) on T-036; reclaimed after flag visible |
+| 2026-08-26 09:14 | gamma | Flagged beta lock stale (no heartbeat 2h+) on T-036; reclaimed after flag visible |
 | 2026-08-25 17:02 | alpha | T-037 moved to BLOCKED — decision posted in PENDING-OWNER #D-012 |

@@ -5,7 +5,7 @@
 <br>
 
 [![Release](https://img.shields.io/github/v/release/moiz-za/system-kit?label=release&color=success)](https://github.com/moiz-za/system-kit/releases)
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Version](https://img.shields.io/badge/version-3.0.0-blue)
 [![Stars](https://img.shields.io/github/stars/moiz-za/system-kit?style=social)](https://github.com/moiz-za/system-kit/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blue?logo=github)](https://github.com/moiz-za/system-kit/discussions)
@@ -81,24 +81,38 @@ Every agent thread follows one loop:
 
 ```mermaid
 flowchart LR
-    A["Read START_HERE"] --> B["Claim a task"]
-    B --> C["Register in THREADS"]
-    C --> D["Work the task"]
+    A["Read START_HERE"] --> B["Claim a task atomically"]
+    B --> C["Work in your scope or isolated tree"]
+    C --> D["Merge back under MERGE"]
     D --> E["Close out: log + deregister"]
     E --> A
 ```
 
-Collisions are prevented by the **three-mutex model** — separate locks for
-separate concerns:
+Collisions are prevented by the **four-mutex model** — separate locks
+for separate concerns:
 
 | Mutex | Guards | Hold duration |
 |---|---|---|
-| `CODE` | Source files | Task-long |
-| `LEDGER` | Shared tracking docs | Seconds per edit |
+| `CODE` | Declared file scope (parallel holders iff scopes are disjoint) | Task-long |
+| `LEDGER` | Shared tracking docs (append-only, registry-locked) | Seconds per edit |
 | `DB-CF` | Database / cloud infrastructure | Action-long |
+| `MERGE` | One merge-back of an isolated tree at a time | One merge |
 
-A docs-only thread needs only `LEDGER`, so it never waits behind a code
-thread — and two code threads can never touch the same file.
+Claims are **atomic and machine-checked** wherever a POSIX shell
+exists: two threads racing to claim one task — exactly one wins; a
+scope overlapping a live thread's scope — refused at claim time and
+rejected at commit time (git projects). Works identically with or
+without git:
+
+| Environment | What you get |
+|---|---|
+| Plain local folder, no git | Scoped parallel CODE, atomic claims, folder-copy isolation |
+| Git repo (local-only or hosted) | All the above + worktree isolation + commit-scope hook |
+| Hosted with CI | All the above + CI governance gates (offered at setup) |
+
+Tier detection is automatic — one setup prompt inspects the project
+and installs exactly what the environment supports. No configuration,
+no new questions.
 
 ---
 
@@ -106,13 +120,15 @@ thread — and two code threads can never touch the same file.
 
 | Capability | How |
 |---|---|
-| Multi-thread coordination | Three-mutex concurrency model with live thread registry |
+| Multi-thread coordination | Four-mutex concurrency model with scoped parallel CODE and live thread registry |
+| Machine-checked claims | Atomic register script — race-free claims, overlap rejection, commit-scope hook |
 | Task queue with claim/lock/release | Single entry point + priority queue + conflict detection |
 | Verification gates | Local-first testing, five-step order, owner verifies last |
 | Institutional memory | Append-only ledgers + checkpoint/resume system |
 | Push discipline | Ledger currency required; owner-gated deployments |
 | Key isolation | Credentials handled internally; never exposed to agents or logs |
 | Plain-language owner gate | Decisions in simple English; owner interrupted only when needed |
+| Universal deployment | Same system with git, without git, with CI, or with none of it |
 | Optional model rotation | Live availability probing for rotating free-tier catalogs |
 
 ---
@@ -131,8 +147,9 @@ Each pattern documents the real failure class it prevents:
 | [Model Rotation](patterns/model-rotation.md) | Dead/rotated free-tier models breaking sessions |
 | [Prompt Injection Defense](patterns/prompt-injection-defense.md) | Malicious instructions hidden in project data |
 | [Context Window Management](patterns/context-window-management.md) | Decisions lost to context compaction |
-| [Worktree Parallel Coding](patterns/worktree-parallel.md) | Serialized code threads when true parallelism is needed |
-| [Non-VCS Mutex](patterns/non-vcs-mutex.md) | Three-mutex concurrency without version control |
+| [Worktree Parallel Coding](patterns/worktree-parallel.md) | Long code tasks queuing behind each other (git) |
+| [Folder-Copy Parallel Coding](patterns/folder-copy-parallel.md) | Long code tasks queuing behind each other (no git) |
+| [Non-VCS Mutex](patterns/non-vcs-mutex.md) | Losing concurrency guarantees without version control |
 
 ---
 
@@ -144,24 +161,27 @@ Each pattern documents the real failure class it prevents:
 - **Anyone on free tiers** juggling rotating model catalogs
 
 Works with any language, framework, host, AI provider, and any number of
-concurrent threads. Zero dependencies — it's markdown methodology, not software.
-Git is the default VCS assumption; a non-VCS mutex variant handles projects
-without version control.
+concurrent threads — with git or without, hosted or purely local.
+The concurrency core needs only a POSIX shell; the kit ships machine
+enforcement scripts (atomic claims, scope checks, commit hooks) as
+optional integrations, with a fully documented manual protocol where
+no shell exists.
 
 ---
 
 ## Honest Limitations
 
 > [!WARNING]
-> This kit relies on agents *following documented protocols*. There is no
-> runtime enforcement, no telemetry, no magic. If an agent ignores
-> `THREADS.md`, nothing physically stops it — the kit makes correct behavior
-> **explicit, checkable, and recoverable**, not automatic.
+> Machine enforcement covers claims and (in git projects) commits —
+> it is not runtime surveillance. Where no POSIX shell exists, the kit
+> degrades to the documented manual protocol: correct behavior stays
+> **explicit, checkable, and recoverable**, just not automatic. If an
+> agent ignores `THREADS.md` on such a system, nothing physically
+> stops it until the next claim or CI check catches the overlap.
 >
-> Also: the mutex model assumes one shared filesystem (see the
-> [Non-VCS Mutex](patterns/non-vcs-mutex.md) for projects without git,
-> and the [Worktree Parallel Coding](patterns/worktree-parallel.md) for true
-> parallel edits), and templates are English-only.
+> Also: filesystem locking assumes one shared filesystem (see the
+> [Non-VCS Mutex](patterns/non-vcs-mutex.md) for the boundary), and
+> templates are English-only.
 
 ---
 
@@ -173,8 +193,9 @@ agent does the file work. You only ever make decisions.
 
 **How is this different from just having an AGENTS.md?**
 An AGENTS.md states rules; System Kit adds the machinery that makes rules
-operational — a live lock registry, append-only history, checkpoint format,
-and an initialization prompt that adapts all of it to your project.
+operational — a live lock registry with atomic machine-checked claims,
+append-only history, checkpoint format, and an initialization prompt
+that adapts all of it to your project.
 
 **Does it work with my agent/tool?**
 Yes. It's plain markdown — any LLM agent that can read and write files can
@@ -192,11 +213,11 @@ No. Zero telemetry, zero network calls, zero data collection.
 
 | Path | Purpose |
 |---|---|
-| [`SETUP_PROMPT.md`](SETUP_PROMPT.md) | Paste into a new thread → initializes governance (incl. troubleshooting appendix) |
+| [`SETUP_PROMPT.md`](SETUP_PROMPT.md) | Paste into a new thread → initializes governance (auto-detects git/shell/CI; idempotent re-runs upgrade in place; incl. troubleshooting appendix) |
 | [`docs/`](docs/) | The governance files the agent copies into your project and fills in (incl. `AGENT_BRIEF.md` — the entry point no agent can skip) |
 | [`patterns/`](patterns/) | Read-only references explaining why each rule exists |
 | [`examples/`](examples/) | Worked examples + framework quick-starts: Laravel, Next.js, FastAPI, monorepo |
-| [`integrations/`](integrations/) | Optional extras — e.g., GitHub Actions governance-compliance check |
+| [`integrations/`](integrations/) | Optional extras — enforcement scripts (atomic claims, scope checks, tests) + GitHub Actions governance check |
 
 ---
 

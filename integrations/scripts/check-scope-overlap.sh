@@ -1,111 +1,139 @@
 #!/usr/bin/env bash
 #
-# check-scope-overlap.sh — Machine-checkable file scope declarations.
+# check-scope-overlap.sh — machine-checkable file scope declarations.
 #
 # Usage:
-#   ./integrations/scripts/check-scope-overlap.sh <threads.md> <file...>
+#   ./integrations/scripts/check-scope-overlap.sh <threads.md> <file...>     # claim mode
+#   ./integrations/scripts/check-scope-overlap.sh <threads.md> --all         # CI mode
 #
-# Reads the Active Threads table in THREADS.md, extracts every live thread's
-# "Shared Files" column, and checks whether any of the files you're about to
-# claim are already owned by another active thread.
+# Claim mode: check whether files you are about to claim overlap any
+# ACTIVE main-tree thread's declared scope.
 #
-# Exit 0  →  clean, no overlap, safe to claim CODE
-# Exit 1  →  overlap found, DO NOT claim CODE (see message)
-# Exit 2  →  usage / input error
+# CI mode (--all): verify no two ACTIVE threads' main-tree scopes
+# overlap — the machine-checked parallel-safety gate.
 #
-# Scope matching: exact path match OR directory containment
-# (e.g. claiming "src/api/tasks.ts" when another thread owns "src/api/tasks.ts"
-#  OR "src/api/" both count as overlap).
+# Supports BOTH table formats:
+#   New (v3): | Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |
+#   Old (v2): | Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status |
+# Isolated-tree rows (worktree/copy) are excluded from main-tree
+# conflict checks — their edits live in separate trees until merge.
 #
-# Stale threads (>4h no heartbeat) are reported but NOT auto-claimed —
-# reclaiming still requires the human step (flag in START_HERE.md §5).
+# Exit 0  → clean, no overlap
+# Exit 1  → overlap found, DO NOT claim / CI FAIL
+# Exit 2  → usage / input error
 
-set -eu
+set -u
 
 usage() {
   cat <<EOF
-Usage: $0 <threads.md> <file...>
+Usage: $0 <threads.md> <file...> | <threads.md> --all
   threads.md  path to THREADS.md (Active Threads table)
-  file...     the files this thread is about to claim
+  file...     the files/dirs this thread is about to claim (claim mode)
+  --all       check all ACTIVE threads pairwise (CI mode)
 
-  Example:
-    $0 docs/THREADS.md "src/api/tasks.ts" "src/api/schemas.ts"
+Examples:
+  Claim:  $0 docs/THREADS.md "src/api/tasks.ts" "src/api/"
+  CI:     $0 docs/THREADS.md --all
 EOF
 }
 
-if [ "$#" -lt 1 ]; then usage; exit 2; fi
+[ "$#" -ge 2 ] || { usage; exit 2; }
 
-THREADS_FILE="$1"
-shift
+THREADS_FILE="$1"; shift
 
-if [ ! -f "$THREADS_FILE" ]; then
-  echo "ERROR: THREADS.md not found at '$THREADS_FILE'"
-  exit 2
-fi
+[ -f "$THREADS_FILE" ] || { echo "ERROR: THREADS.md not found at '$THREADS_FILE'"; exit 2; }
 
-# Normalize: strip CR, drop blank lines, drop the header + separator rows.
-# Shared Files is column 5 (Thread|Started|Tasks|Mutexes|Shared Files|Heartbeat|Status).
-normalize() {
-  sed 's/\r$//' "$THREADS_FILE" \
-    | grep -v '^| *- ' \
-    | grep -v '^| *Thread ' \
-    | grep -v '^$'
+# Extract ACTIVE rows as "name|scope|tree" (layout-agnostic via NF).
+# New-format rows have NF=10 (trailing empty field after final pipe);
+# old-format rows have NF=9. Tree exists only in new format.
+get_active() {
+  awk -F'|' '
+    /^\|/ && !/\| *-+/ && !/Thread *\|/ {
+      status = $(NF-1); gsub(/^[ \t]+|[ \t]+$/, "", status)
+      if (status != "ACTIVE") next
+      name = $2; gsub(/^[ \t]+|[ \t]+$/, "", name)
+      scope = $6; gsub(/^[ \t]+|[ \t]+$/, "", scope)
+      tree = (NF >= 10) ? $7 : "main"
+      gsub(/^[ \t]+|[ \t]+$/, "", tree)
+      if (tree == "") tree = "main"
+      print name "|" scope "|" tree
+    }' "$THREADS_FILE"
 }
 
-overlap() {
-  # $1 = claimed path, $2 = owner path
+overlap() { # $1 claimed path, $2 owner path (dir scopes end with /)
   local claim="$1" owner="$2"
-  # Exact match
+  { [ -z "$claim" ] || [ -z "$owner" ]; } && return 1
   [ "$claim" = "$owner" ] && return 0
-  # Directory containment (owner is a directory prefix of claim, or vice versa)
-  case "$claim" in
-    "$owner"/*) return 0 ;;
-  esac
-  case "$owner" in
-    "$claim"/*) return 0 ;;
-  esac
+  case "$claim" in "$owner"*) return 0 ;; esac
+  case "$owner"  in "$claim"*) return 0 ;; esac
   return 1
 }
 
-any_owners=()
-while IFS= read -r line; do
-  # Only ACTIVE rows; split on | and take field 5
-  status=$(echo "$line" | awk -F'|' '{for(i=1;i<=NF;i++){gsub(/^[ \t]+|[ \t]+$/,"",$i)} print $NF}')
-  files=$(echo "$line" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/,"",$5); print $5}')
-  if [ -z "$files" ]; then continue; fi
-  case "$status" in
-    ACTIVE) : ;;
-    *) continue ;;  # CLAIMED/COMPLETED/NOTIFY — only ACTIVE threads own files
-  esac
-  IFS=' ,' read -ra farr <<< "$files"
-  for f in "${farr[@]}"; do
-    [ -z "$f" ] && continue
-    any_owners+=("$f")
-  done
-done < <(normalize)
-
-if [ "${#any_owners[@]}" -eq 0 ]; then
-  echo "No active threads own files. Clean claim."
+# ---- CI mode: pairwise check of all ACTIVE threads ----
+if [ "${1:-}" = "--all" ]; then
+  shift  # drop --all
+  TMPROWS="$(mktemp)"
+  get_active > "$TMPROWS"
+  if [ ! -s "$TMPROWS" ]; then
+    echo "No active threads. Registry clean."
+    rm -f "$TMPROWS"; exit 0
+  fi
+  conflict=0
+  # nested read loops over the same file need distinct fds (bash 3.2 safe)
+  while IFS= read -r r1 <&3; do
+    [ -z "$r1" ] && continue
+    while IFS= read -r r2 <&4; do
+      [ -z "$r2" ] && continue
+      [ "$r1" = "$r2" ] && continue  # same row — skip self-comparison
+      IFS='|' read -r n1 s1 t1 <<< "$r1"
+      IFS='|' read -r n2 s2 t2 <<< "$r2"
+      # Only MAIN-tree scopes conflict during work; isolated-tree
+      # (worktree/copy) edits live elsewhere and surface at MERGE.
+      [ "$t1" = "main" ] && [ "$t2" = "main" ] || continue
+      for p1 in $s1; do
+        for p2 in $s2; do
+          if overlap "$p1" "$p2"; then
+            echo "CONFLICT (CI): '$n1' scope '$p1' overlaps '$n2' scope '$p2'"
+            conflict=1
+          fi
+        done
+      done
+    done 4< "$TMPROWS"
+  done 3< "$TMPROWS"
+  rm -f "$TMPROWS"
+  if [ "$conflict" -eq 1 ]; then
+    echo "FAIL: overlapping scopes among ACTIVE threads."
+    exit 1
+  fi
+  echo "Clean: no scope overlaps among active threads."
   exit 0
 fi
 
+# ---- Claim mode: proposed paths vs active main-tree owners ----
+TMPROWS="$(mktemp)"
+get_active | awk -F'|' '$3 == "main" {print $1 "|" $2}' > "$TMPROWS"
+
 conflict=0
 for claim in "$@"; do
-  for owner in "${any_owners[@]}"; do
-    if overlap "$claim" "$owner"; then
-      echo "CONFLICT: '$claim' is already owned by an active thread (shared file: '$owner')"
+  while IFS= read -r pair; do
+    [ -z "$pair" ] && continue
+    oname="${pair%%|*}"; oscope="${pair#*|}"
+    if overlap "$claim" "$oscope"; then
+      echo "CONFLICT: '$claim' overlaps active thread '$oname' (owns '$oscope')"
       conflict=1
     fi
-  done
+  done < "$TMPROWS"
 done
+rm -f "$TMPROWS"
 
 if [ "$conflict" -eq 1 ]; then
   echo
-  echo "DO NOT claim CODE for these files. Either:"
-  echo "  - notify the owning thread (post in START_HERE.md §5), or"
-  echo "  - claim a different OPEN task with a non-overlapping scope."
+  echo "DO NOT claim this scope. Either:"
+  echo "  - notify the owning thread (START_HERE.md notifications), or"
+  echo "  - claim a different OPEN task with a non-overlapping scope, or"
+  echo "  - use worktree/copy mode for isolated parallel work."
   exit 1
 fi
 
-echo "Clean: no scope overlap with any active thread. Safe to claim."
+echo "Clean: no scope overlap with any active main-tree thread. Safe to claim."
 exit 0

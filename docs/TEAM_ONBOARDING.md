@@ -15,9 +15,12 @@ Default in solo projects: Owner = Operator = the same person.
 
 ## Who can claim CODE vs LEDGER vs DB-CF
 
-- **LEDGER** — anyone. Brief holds (seconds per edit) are routine.
-- **CODE** — Operator or Owner. Never two CODES in parallel unless the
-  monorepo example's `Scope` column is used and scopes are verified disjoint.
+- **LEDGER** — anyone. Brief holds (seconds per edit, under the REGISTRY
+  lock) are routine.
+- **CODE** — Operator or Owner, to a **declared scope**. Parallel CODE
+  claims are fine when scopes are disjoint — the claim script verifies
+  this; when in doubt, or for long tasks, use an isolated mode
+  (worktree with git, folder-copy without).
 - **DB-CF** — Owner only, by default. Migrations and infrastructure
   changes are risky enough that one person should hold this account.
   A more mature team can extend DB-CF to specific Operators.
@@ -48,7 +51,7 @@ Default in solo projects: Owner = Operator = the same person.
 | Conflict | Resolution |
 |---|---|
 | Two threads want CODE at once | Whoever registered first wins; the other posts in `START_HERE.md §5` and waits |
-| Stale thread (>4h no heartbeat) | Flag in `START_HERE.md §5`, then reclaim after flag is visible |
+| Stale thread (no heartbeat for 2h+) | Flag in `START_HERE.md §5`, then reclaim after flag is visible |
 | Disagreement on a law | Owner decides; the law lives in `AGENTS.md` amendment log |
 | Disagreement on a domain decision | `docs/workflow/PENDING-OWNER.md`; defaults proceed if no Owner response in 24h |
 | Personal/priority override | Owner only. Logged in BUILDLOG with reason. |
@@ -56,7 +59,7 @@ Default in solo projects: Owner = Operator = the same person.
 ## What "the team is healthy" looks like
 
 - BUILDLOG is current within 24h of every commit
-- THREADS.md has no rows older than 4h without a heartbeat
+- THREADS.md has no rows without a heartbeat for 2h+
 - PENDING-OWNER.md has zero open decisions older than 7 days
 - No thread is stuck waiting on Owner more than 24h
 - Scope declarations in THREADS.md match what threads actually touched

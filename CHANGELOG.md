@@ -3,6 +3,72 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.0] — 2026-09-02
+
+### Changed (BREAKING — concurrency model)
+
+- **Scoped CODE mutex** — CODE is now an exclusive write to a *declared
+  scope* instead of a single global lock. Multiple threads may hold CODE
+  simultaneously iff scopes are disjoint, machine-verified at claim time.
+  THREADS.md gains mandatory `Scope` and `Tree` columns (old-format tables
+  still parse; `Shared Files` is superseded by `Scope`). Declaring the whole
+  repo reproduces the old behavior.
+- **Four-mutex model** — new `MERGE` mutex serializes merge-backs of
+  isolated trees so the main tree is never in two half-merged states.
+- **Heartbeat spec normalized** — one rule everywhere: stamp ~30 min during
+  active work, stale after 2h+ without a heartbeat (previously 4h in core
+  docs vs 2h in the non-VCS pattern).
+- **README/SETUP_PROMPT/patterns** rewritten around the universal
+  three-tier capability model (filesystem core / git extras / CI extras),
+  auto-detected at setup — zero new owner questions.
+
+### Added
+
+- **Atomic claim pipeline** (`integrations/scripts/`) — the registry itself
+  is now race-free:
+  - `lib/registry-lock.sh` — shared noclobber filesystem lock (10s timeout)
+    wrapping every THREADS.md/TASKS.md read-modify-write
+  - `register-thread.sh` — THE claim: lock → unique-name check →
+    scope-overlap check vs all ACTIVE main-tree rows → row insert → task
+    OPEN→CLAIMED flip → `.kit-thread` identity file; worktree (git) and
+    copy (no-git) isolation modes built in. Simultaneous claims of the
+    same task: exactly one wins.
+  - `release-thread.sh` — atomic deregister: clean-tree check, MERGE-guarded
+    merge-back (worktree branches / folder-copy diffs), row moved to
+    Recently Completed, task DONE.
+  - `heartbeat.sh` — stamps the caller's row under the registry lock.
+  - `pre-commit-scope-check.sh` — git hook rejecting commits outside the
+    committing thread's declared scope (registry files always allowed);
+    human commits without identity pass with a note.
+- **Folder-copy isolation** (`patterns/folder-copy-parallel.md`) — the
+  no-git twin of worktrees: per-thread `copy-<thread>/` merged back under
+  MERGE at close-out. True parallel isolation for plain local folders.
+- **CI pairwise scope gate** — `check-scope-overlap.sh --all` fails when
+  any two ACTIVE main-tree threads declare overlapping scopes.
+- **`run-tests.sh`** — zero-dependency harness simulating parallel sessions
+  in BOTH modes (filesystem + git): atomic double-claims, overlap blocks,
+  disjoint parallel claims, heartbeats, worktree + folder-copy lifecycle,
+  commit-scope rejection (34 checks). Fixtures live outside the repo by
+  design; the harness refuses to run with stray kit worktrees present.
+- **SETUP_PROMPT STEP 0** — idempotent upgrade pass: re-running the same
+  setup prompt on an existing install re-detects capabilities, updates the
+  Mode line, and installs only missing components — existing content is
+  never rebuilt.
+- **Capability detection table** in SETUP_PROMPT STEP 2 — shell/git/CI
+  detected by inspection, not questions; Mode recorded in START_HERE §4.
+
+### Fixed
+
+- **governance-check.yml** — steps 4–6 (`Thread registry present`, `No scope
+  overlap`, `All checkpoints complete`) had invalid indentation (mis-anchored
+  list items) making the workflow unparseable; re-normalized, plus the
+  scope step now runs `--all` meaningfully.
+
+### Compatibility
+
+- v2 THREADS.md tables (7-column) parse correctly in all v3 scripts —
+  upgrade is non-destructive. Re-running SETUP_PROMPT performs the upgrade.
+
 ## [2.0.0] — 2026-08-28
 
 ### Added
