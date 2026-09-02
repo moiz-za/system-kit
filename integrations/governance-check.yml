@@ -76,9 +76,21 @@ jobs:
             echo "WARN: THREADS.md not found — skipping scope check"
             exit 0
           fi
+          # Locate the checker: kit repo layout (integrations/scripts/),
+          # installed layout (governance-scripts/), or repo root scripts/
+          CHECKER=""
+          for c in integrations/scripts/check-scope-overlap.sh \
+                   governance-scripts/check-scope-overlap.sh \
+                   check-scope-overlap.sh; do
+            [ -f "$c" ] && CHECKER="$c" && break
+          done
+          if [ -z "$CHECKER" ]; then
+            echo "WARN: check-scope-overlap.sh not installed — skipping pairwise gate"
+            exit 0
+          fi
           # Pairwise check: no two ACTIVE main-tree threads may declare
           # overlapping scopes. Isolated trees (worktree/copy) coexist.
-          ./integrations/scripts/check-scope-overlap.sh "$THREADS" --all || {
+          ./"$CHECKER" "$THREADS" --all || {
             echo "FAIL: scope overlap detected — see above"
             exit 1
           }
@@ -91,7 +103,17 @@ jobs:
             echo "WARN: docs/ folder not found — skipping checkpoint validation"
             exit 0
           fi
-          ./integrations/scripts/validate-checkpoint.sh "$DOCS" || {
+          VALIDATOR=""
+          for c in integrations/scripts/validate-checkpoint.sh \
+                   governance-scripts/validate-checkpoint.sh \
+                   validate-checkpoint.sh; do
+            [ -f "$c" ] && VALIDATOR="$c" && break
+          done
+          if [ -z "$VALIDATOR" ]; then
+            echo "WARN: validate-checkpoint.sh not installed — skipping checkpoint gate"
+            exit 0
+          fi
+          ./"$VALIDATOR" "$DOCS" || {
             echo "FAIL: incomplete checkpoint(s) found — see above"
             exit 1
           }

@@ -29,14 +29,26 @@ registry_acquire() {
   mkdir -p "$lockdir" 2>/dev/null || true
   local lock="$lockdir/$name.lock"
   local tries=0
-  while [ "$tries" -lt 100 ]; do  # ~10s at 0.1s intervals
-    if ( set -o noclobber; echo "$$" > "$lock" ) 2>/dev/null; then
-      return 0
-    fi
-    tries=$((tries + 1))
-    sleep 0.1
-  done
-  echo "ERROR: could not acquire $name lock at '$lock' within 10s." >&2
+  # ~10s: 100 tries at 0.1s (fractional sleep is a POSIX-shell extension;
+  # if unavailable, fall back to 1s sleeps and fewer tries)
+  if sleep 0.1 2>/dev/null; then
+    while [ "$tries" -lt 100 ]; do
+      if ( set -o noclobber; echo "$$" > "$lock" ) 2>/dev/null; then
+        return 0
+      fi
+      tries=$((tries + 1))
+      sleep 0.1
+    done
+  else
+    while [ "$tries" -lt 10 ]; do
+      if ( set -o noclobber; echo "$$" > "$lock" ) 2>/dev/null; then
+        return 0
+      fi
+      tries=$((tries + 1))
+      sleep 1
+    done
+  fi
+  echo "ERROR: could not acquire $name lock at '$lock' within timeout." >&2
   echo "  Another thread may be mid-edit, or a stale lock exists." >&2
   echo "  If no thread holds it (check THREADS.md), flag it in" >&2
   echo "  START_HERE.md notifications, then remove the file." >&2

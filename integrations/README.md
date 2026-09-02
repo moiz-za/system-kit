@@ -45,6 +45,11 @@ worktree mode require git. Pure-filesystem projects use main + copy modes.
 **Scripts:** copy `integrations/scripts/` into the project (SETUP_PROMPT
 does this automatically at setup — `governance-scripts/` by default).
 
+**Tests:** this repo runs the harness on every push/PR via
+[`.github/workflows/script-tests.yml`](../.github/workflows/script-tests.yml)
+on both Ubuntu (GNU userland) and macOS (BSD userland) — portability bugs
+like `sed -i` differences or bash 3.2 gaps surface before release.
+
 **Pre-commit hook** (git projects, after owner approval):
 ```bash
 cp governance-scripts/pre-commit-scope-check.sh .git/hooks/pre-commit

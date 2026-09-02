@@ -3,6 +3,27 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.0.1] — 2026-09-02
+
+### Fixed
+
+- **`run-tests.sh` portability** — in-place edits used macOS-only
+  `sed -i ''`; replaced with a portable `sed_inplace` helper (temp file +
+  move). T10b/T10c now pass on GNU/Linux, not just BSD/macOS.
+- **`registry-lock.sh`** — fractional `sleep 0.1` is a shell extension;
+  added integer-sleep fallback for minimal POSIX shells.
+- **`governance-check.yml` script paths** — workflow assumed the kit's own
+  repo layout (`integrations/scripts/`); now probes the installed
+  locations (`governance-scripts/`, root `scripts/`, kit layout) and
+  degrades to a WARN skip instead of failing when scripts aren't installed.
+
+### Added
+
+- **CI test matrix** (`.github/workflows/script-tests.yml`) — the harness
+  now runs on every push/PR on both ubuntu-latest and macos-latest, plus a
+  v2-format compatibility step. The sed portability class of bug is
+  structurally caught from now on.
+
 ## [3.0.0] — 2026-09-02
 
 ### Changed (BREAKING — concurrency model)

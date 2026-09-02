@@ -31,6 +31,12 @@ PASS=0; FAIL=0; FAILED_TESTS=()
 ok()   { PASS=$((PASS+1)); echo "  ok    $1"; }
 bad()  { FAIL=$((FAIL+1)); FAILED_TESTS+=("$1"); echo "  FAIL  $1"; }
 
+# Portable in-place sed (macOS BSD sed needs -i ''; GNU sed needs -i)
+sed_inplace() {
+  local expr="$1" file="$2" tmp="${2}.sedtmp"
+  sed "$expr" "$file" > "$tmp" && mv "$tmp" "$file"
+}
+
 t() { # t <name> <expected-exit> <cmd...>
   local name="$1" want="$2"; shift 2
   "$@" >/dev/null 2>&1
@@ -150,12 +156,12 @@ echo; echo "CI --all mode:"
 t "T10 clean registry passes" 0 "$SCRIPT_DIR/check-scope-overlap.sh" "$FS/docs/THREADS.md" --all
 # negative case: two ACTIVE rows with overlapping scopes must FAIL
 OV="$(new_fixture fs_ov no)"
-sed -i '' 's@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |\
+sed_inplace 's@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |\
 | beta2 | 2026-09-02 09:05 | T-998 | CODE | src/api/tasks.ts | main | 2026-09-02 09:05 | ACTIVE |@' "$OV/docs/THREADS.md"
 t "T10b overlapping registry FAILS --all" 1 "$SCRIPT_DIR/check-scope-overlap.sh" "$OV/docs/THREADS.md" --all
 # isolated trees never conflict with main-tree scope in --all
 ISO="$(new_fixture fs_iso no)"
-sed -i '' 's@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |\
+sed_inplace 's@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |\
 | iso | 2026-09-02 09:05 | T-998 | CODE | src/api/ | copy-iso | 2026-09-02 09:05 | ACTIVE |@' "$ISO/docs/THREADS.md"
 t "T10c isolated tree coexists in --all" 0 "$SCRIPT_DIR/check-scope-overlap.sh" "$ISO/docs/THREADS.md" --all
 

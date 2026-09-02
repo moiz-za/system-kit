@@ -182,7 +182,10 @@ AFTER owner approval (STEP 5):
 && chmod +x .git/hooks/pre-commit`. Record `Mode: GIT` in START_HERE §4.
 
 Tier 2 (remote/CI present): offer `governance-check.yml` at STEP 5
-(recommended default: yes). Copy to `.github/workflows/` on approval.
+(recommended default: yes). Copy to `.github/workflows/` on approval,
+and adjust its script paths to the installed location above (the
+workflow looks in `governance-scripts/`, `scripts/` at root, or
+`integrations/scripts/` — in that order).
 
 No shell at all: skip script install; note in START_HERE that claims
 follow the manual protocol documented in THREADS.md.

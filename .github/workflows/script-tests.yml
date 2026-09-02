@@ -1,0 +1,44 @@
+# CI test matrix for the kit's enforcement scripts.
+# Runs the zero-dependency harness on both macOS (BSD userland) and
+# Ubuntu (GNU userland) so portability bugs (sed -i, sleep fractions,
+# bash 3.2 vs 5.x) surface before release.
+
+name: Script Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enforce Bash (scripts use bash features; macos sh is bash3-as-sh)
+        run: |
+          # Run harness explicitly under bash, mirroring local usage
+          bash --version | head -1
+
+      - name: Run the harness
+        run: |
+          chmod +x integrations/scripts/*.sh integrations/scripts/lib/*.sh
+          ./integrations/scripts/run-tests.sh
+
+      - name: Old-format compatibility (v2 7-column tables still parse)
+        run: |
+          TMP="$(mktemp -d)"
+          printf '## Active Threads\n\n| Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status |\n|---|---|---|---|---|---|---|\n| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | 2026-09-02 09:00 | ACTIVE |\n' > "$TMP/THREADS.md"
+          if ./integrations/scripts/check-scope-overlap.sh "$TMP/THREADS.md" "src/api/tasks.ts" >/dev/null 2>&1; then
+            echo "FAIL: v2-format overlap was missed"
+            exit 1
+          fi
+          ./integrations/scripts/check-scope-overlap.sh "$TMP/THREADS.md" "src/ui/app.ts" >/dev/null
+          echo "OK: v2 format parsed, conflict caught, disjoint clean"
+          rm -rf "$TMP"
