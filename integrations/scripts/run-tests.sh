@@ -182,6 +182,15 @@ t "T7 worktree register" 0 "$SCRIPT_DIR/register-thread.sh" "$GT/docs" wt T-100 
 WTPATH="$(awk -F'|' '
   /^\| *Thread/ { for (i=1;i<=NF;i++){v=$i; gsub(/^[ \t]+|[ \t]+$/,"",v); if(v=="Tree"){t=i}} next }
   t && /^\|/ && !/^\| *-+/ && /\| wt \|/ { print $t; exit }' "$GT/docs/THREADS.md" | tr -d ' ')"
+# HARD GUARD: never operate on an empty/unresolved path — an empty
+# WTPATH would make "git -C '' ..." run in THIS repo (the historical
+# junk-commit leak vector). Fail the test and neutralize instead.
+if [ -z "$WTPATH" ] || [ ! -d "$WTPATH" ]; then
+  bad "T7 worktree path resolution (got '${WTPATH:-empty}')"
+  WTPATH="$GT/docs"  # neutral fallback: later tests can't touch this repo
+else
+  ok "T7z worktree path resolved"
+fi
 assert "T7a worktree exists" test -d "$WTPATH"
 # work in the tree, commit, release (merge back)
 echo "// wt work" >> "$WTPATH/src/api/tasks.ts"
