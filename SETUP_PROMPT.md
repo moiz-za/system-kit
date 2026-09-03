@@ -81,6 +81,7 @@ installed in STEP 4. Detection is by direct observation:
 | POSIX shell | `bash --version` or `sh` succeeds | Tier 0: claim/lock scripts installable |
 | Git | `.git/` present (`git rev-parse` succeeds; local-only counts — no remote needed) | Tier 1: worktree mode default + pre-commit scope hook |
 | Remote / CI | `git remote -v` non-empty, or `.github/workflows/` exists | Tier 2: offer CI governance check at STEP 5 |
+| Deploy target | Owner's Step-3 deploy answer names a server/host/service (anything beyond "none"/"local only") | Lane system: DEPLOY_QUEUE.md + DEPLOY_HANDOFF_TEMPLATE.md installed; DEPLOY lane live. No deploy target → the four lanes ship in docs with DEPLOY documented as dormant and the two templates skipped |
 
 A project with no shell degrades to the documented manual protocol —
 the rules are identical, only machine enforcement is absent. Say so
@@ -163,9 +164,15 @@ create the following structure from scratch:
 >   Concurrency Protocol (four mutexes: scoped CODE, LEDGER, DB-CF, MERGE;
 >   isolation modes) · Article III Domain Laws (from owner answers) ·
 >   Article IV Amendment Process + Amendment Log table.
-> - **THREADS.md** — Protocol rules · Active Threads table
->   (Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status)
->   · Recently Completed table.
+> - **THREADS.md** — Protocol rules (incl. four-lane declaration:
+>   STRATEGY/DOCS/CODE/DEPLOY at claim time) · Active Threads table
+>   (Thread | Started | Tasks | Lane | Mutexes | Scope | Tree | Model |
+>   Heartbeat | Status) · Recently Completed table.
+> - **workflow/DEPLOY_QUEUE.md** + **workflow/DEPLOY_HANDOFF_TEMPLATE.md**
+>   — ONLY when a deploy target was detected; the queue's "deploy
+>   method" note is filled from the owner's Step-3 deploy answer
+>   (concrete commands for THIS project). Projects without a deploy
+>   target skip both files; the DEPLOY lane stays dormant.
 > - **workflow/TASKS.md** — Task Queue table (ID | Task | Spec | Needs | Deps |
 >   Status) + Completed table.
 > - **workflow/BUILDLOG.md** — append-only table (Date | Task/ID | Change |
@@ -180,14 +187,15 @@ Tier 0 (shell present — nearly universal): copy the kit's
 `integrations/scripts/` into the project at `governance-scripts/` (or an
 owner-approved location): `register-thread.sh`, `release-thread.sh`,
 `heartbeat.sh`, `check-scope-overlap.sh`, `check-stale.sh`,
-`validate-registry.sh`, `check-buildlog.sh` (git projects),
-`check-security.sh`, `governance-health.sh`, `pre-commit-scope-check.sh`,
-and `lib/` (registry-lock + scope-match). These give every thread — git
-project or not — atomic claims, scope-overlap rejection (incl. glob
-scopes), stale-thread detection, format validation, security posture
-scans, and locked ledger edits. `governance-health.sh <docs-folder>`
-runs the full sweep in one command — recommend running it at session
-start and before pushes.
+`validate-registry.sh`, `validate-deploy-handoff.sh` (deployable
+projects), `check-buildlog.sh` (git projects), `check-security.sh`,
+`governance-health.sh`, `pre-commit-scope-check.sh`, and `lib/`
+(registry-lock + registry-parse + scope-match). These give every thread
+— git project or not — atomic claims with lanes, scope-overlap
+rejection (incl. glob scopes), stale-thread detection, format
+validation, security posture scans, and locked ledger edits.
+`governance-health.sh <docs-folder>` runs the full sweep in one
+command — recommend running it at session start and before pushes.
 
 Tier 1 (git present): additionally install the pre-commit scope hook
 AFTER owner approval (STEP 5):
@@ -234,14 +242,22 @@ Fill every file using:
 
 ### Concurrency protocol (include in every THREADS.md):
 
-Four mutexes prevent collisions between parallel threads:
+Five mutexes prevent collisions between parallel threads:
 - **CODE**: exclusive write to a DECLARED SCOPE — multiple holders allowed
   iff scopes are disjoint (machine-verified at claim; commit-time hook in
   git projects)
 - **LEDGER**: append-only edits to own rows in shared tracking files,
   under the REGISTRY filesystem lock
 - **DB-CF**: database/schema/cloud-infrastructure changes
+- **DEPLOY**: all server execution, one deploy at a time — from complete
+  Deploy Handoffs only (deployable projects; otherwise dormant)
 - **MERGE**: one merge-back of an isolated tree at a time
+
+Four lanes, declared at claim: STRATEGY (plans) · DOCS (content) ·
+CODE (code, never touches a server) · DEPLOY (servers, never writes
+code). CODE-lane close-outs file a Deploy Handoff; DEPLOY threads
+refuse incomplete handoffs. Model is an observability label, never a
+gate or law.
 
 Rules:
 - Claim before working (atomic claim script when available); deregister when done

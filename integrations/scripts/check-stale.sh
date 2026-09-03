@@ -13,6 +13,9 @@
 # timestamp is also old (a just-registered thread hasn't needed a
 # refresh yet).
 #
+# Column-safe: resolves Thread/Started/Heartbeat/Status by HEADER NAME
+# (v2/v3/v4 registries).
+#
 # Usage:
 #   ./check-stale.sh <threads.md>              # human report, exit 0
 #   ./check-stale.sh <threads.md> --strict     # also exit 1 if stale
@@ -26,6 +29,9 @@
 #   v2: | Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status |
 
 set -u
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$SCRIPT_DIR/lib/registry-parse.sh" ] && . "$SCRIPT_DIR/lib/registry-parse.sh"
 
 usage() {
   cat <<EOF
@@ -82,19 +88,36 @@ registry_epoch() { # echoes epoch seconds, or nothing on failure
 NOW_EPOCH="$(date +%s)"
 STALE_SECS=$(( STALE_HOURS * 3600 ))
 
-# Extract ACTIVE rows: "name|heartbeat|started"
+# Extract ACTIVE rows: "name|heartbeat|started" — header-name
+# resolution via lib/registry-parse.sh (v2/v3/v4-safe); legacy rows
+# (column count predating the header) get positional resolution for
+# known layouts; positional fallback only when the library is absent.
 get_rows() {
-  awk -F'|' '
-    /^\|/ && !/\| *-+/ && !/Thread *\|/ {
-      status = $(NF-1); gsub(/^[ \t]+|[ \t]+$/, "", status)
-      if (status != "ACTIVE") next
-      name = $2; gsub(/^[ \t]+|[ \t]+$/, "", name)
-      started = $3; gsub(/^[ \t]+|[ \t]+$/, "", started)
-      # v3 (NF>=10): Heartbeat=$8 · v2 (NF=9): Heartbeat=$7
-      hb = (NF >= 10) ? $8 : $7
-      gsub(/^[ \t]+|[ \t]+$/, "", hb)
-      print name "|" hb "|" started
-    }' "$THREADS_FILE"
+  if type registry_read >/dev/null 2>&1; then
+    registry_read "$(cat "$THREADS_FILE")"
+    local r
+    while IFS= read -r r; do
+      [ -z "$r" ] && continue
+      # universal resolution — legacy rows resolve by their own layout
+      [ "$(registry_col_any "$r" Status "")" = "ACTIVE" ] || continue
+      printf '%s|%s|%s\n' \
+        "$(registry_col_any "$r" Thread "?")" \
+        "$(registry_col_any "$r" Heartbeat "")" \
+        "$(registry_col_any "$r" Started)"
+    done < <(registry_rows)
+  else
+    awk -F'|' '
+      /^\|/ && !/\| *-+/ && !/Thread *\|/ {
+        status = $(NF-1); gsub(/^[ \t]+|[ \t]+$/, "", status)
+        if (status != "ACTIVE") next
+        name = $2; gsub(/^[ \t]+|[ \t]+$/, "", name)
+        started = $3; gsub(/^[ \t]+|[ \t]+$/, "", started)
+        # v2 (NF=9): HB=$8 · v3 (NF=10): HB=$8 · v4 (NF=12): HB=$10
+        hb = (NF == 12) ? $10 : $8
+        gsub(/^[ \t]+|[ \t]+$/, "", hb)
+        print name "|" hb "|" started
+      }' "$THREADS_FILE"
+  fi
 }
 
 stale=0

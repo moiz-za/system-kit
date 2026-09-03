@@ -26,7 +26,10 @@ fallback. Skip this section entirely if you use a single paid provider.
    - has no unmet dependency
    - has a scope that doesn't overlap any ACTIVE main-tree thread
 3. **CLAIM it atomically** — BEFORE touching files:
-   `register-thread.sh <docs-folder> <thread> <task-id> <mode> <scope...>`
+   `register-thread.sh <docs-folder> <thread> <task-id> [--lane LANE] [--model M] [mode] [scope...]`
+   - lane `STRATEGY` (plans) / `DOCS` (content) / `CODE` (default) /
+     `DEPLOY` (all server execution) — declared at claim, never crossed
+     mid-task; DEPLOY threads open `workflow/DEPLOY_QUEUE.md` first
    - mode `main` for small work in the shared tree
    - mode `worktree` (git) / `copy` (no git) for long code tasks needing isolation
    - No script available? Do the same checks by hand against every ACTIVE
@@ -37,6 +40,8 @@ fallback. Skip this section entirely if you use a single paid provider.
 5. **Close out** — `release-thread.sh <docs-folder> <thread> "<summary>"`
    (merges isolated trees back under MERGE, moves your row to completed,
    marks the task DONE). Then: append BUILDLOG + update PENDING-OWNER.
+   CODE lane + deployable project: file the Deploy Handoff
+   (`workflow/DEPLOY_HANDOFF_TEMPLATE.md`) and add the queue entry.
 
 ## §2 CONFLICT & NOTIFY RULE
 

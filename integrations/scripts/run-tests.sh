@@ -129,7 +129,15 @@ ACTIVE_N=$(grep -c '| ACTIVE |' "$FS/docs/THREADS.md" || true)
 [ "$ACTIVE_N" = "4" ] && ok "T4a four ACTIVE rows coexist" || bad "T4a ACTIVE rows ($ACTIVE_N != 4)"
 
 t "T5 heartbeat" 0 "$SCRIPT_DIR/heartbeat.sh" "$FS/docs" alpha
-assert "T5a alpha stamped" grep -qE '\| alpha \|.*\| 2026-09-02 1[0-9]:[0-9]+ \| ACTIVE \|' "$FS/docs/THREADS.md"
+ALPHA_ROW="$(grep '^| alpha |' "$FS/docs/THREADS.md" | head -1)"
+STAMP_OK="no"
+# the Heartbeat cell = second-to-last timestamp-looking token before Status
+if printf '%s' "$ALPHA_ROW" | grep -qE '\| 2026-09-0[0-9] [0-9]{2}:[0-9]{2} \| ACTIVE \|?\s*$'; then
+  STAMP_OK="yes"
+elif printf '%s' "$ALPHA_ROW" | grep -qE '\| 2026-09-0[0-9] [0-9]{2}:[0-9]{2} \|.*\| ACTIVE \|'; then
+  STAMP_OK="yes"
+fi
+[ "$STAMP_OK" = "yes" ] && ok "T5a alpha stamped" || bad "T5a alpha stamped (row: $ALPHA_ROW)"
 assert "T5b beta heartbeat untouched" grep -q '| beta |.*| 2026-09-02 09:00 | ACTIVE |' "$FS/docs/THREADS.md"
 
 # cleanup helper threads
@@ -171,7 +179,9 @@ echo; echo "git mode:"
 GT="$(new_fixture gt1 yes)"
 
 t "T7 worktree register" 0 "$SCRIPT_DIR/register-thread.sh" "$GT/docs" wt T-100 worktree "src/api/"
-WTPATH="$(grep '| wt |' "$GT/docs/THREADS.md" | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/,"",$7); print $7}')"
+WTPATH="$(awk -F'|' '
+  /^\| *Thread/ { for (i=1;i<=NF;i++){v=$i; gsub(/^[ \t]+|[ \t]+$/,"",v); if(v=="Tree"){t=i}} next }
+  t && /^\|/ && !/^\| *-+/ && /\| wt \|/ { print $t; exit }' "$GT/docs/THREADS.md" | tr -d ' ')"
 assert "T7a worktree exists" test -d "$WTPATH"
 # work in the tree, commit, release (merge back)
 echo "// wt work" >> "$WTPATH/src/api/tasks.ts"
@@ -221,7 +231,7 @@ V2="$(new_fixture v2up no)"
 sed_inplace 's@| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |@| Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status |@' "$V2/docs/THREADS.md"
 sed_inplace 's@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | 2026-09-02 09:00 | ACTIVE |@' "$V2/docs/THREADS.md"
 t "T12 claim on v2 registry" 0 "$SCRIPT_DIR/register-thread.sh" "$V2/docs" alpha T-100 main "src/ui/"
-assert "T12a header upgraded to v3" grep -q '| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |' "$V2/docs/THREADS.md"
+assert "T12a header upgraded (directly to current format)" grep -q '| Thread | Started | Tasks | Lane | Mutexes | Scope | Tree | Model | Heartbeat | Status |' "$V2/docs/THREADS.md"
 assert "T12b v2 row intact + readable" grep -q '| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | 2026-09-02 09:00 | ACTIVE |' "$V2/docs/THREADS.md"
 t "T12c overlap still enforced on v2 row" 1 "$SCRIPT_DIR/register-thread.sh" "$V2/docs" gamma T-102 main "src/api/tasks.ts"
 t "T12d release on upgraded registry" 0 "$SCRIPT_DIR/release-thread.sh" "$V2/docs" alpha "v2-upgrade lifecycle"
@@ -286,6 +296,109 @@ else
   ok "T15c secret value never echoed"
 fi
 rm -rf "$SEC" "$CLEAN"
+
+# ================= FOUR-LANE / V4 =================
+echo; echo "four-lane v4:"
+# v4 fixture: v4 header + one v4 row + one legacy v3 row (mixed table)
+L4="$(new_fixture lanes1 no)"
+FRESH_NOW="$(date '+%Y-%m-%d %H:%M')"
+sed_inplace 's@| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |@| Thread | Started | Tasks | Lane | Mutexes | Scope | Tree | Model | Heartbeat | Status |@' "$L4/docs/THREADS.md"
+sed_inplace 's@|---|---|---|---|---|---|---|@|---|---|---|---|---|---|---|---|---|@' "$L4/docs/THREADS.md"
+sed_inplace "s@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | $FRESH_NOW | T-999 | CODE | CODE | src/api/ | main | - | $FRESH_NOW | ACTIVE |@" "$L4/docs/THREADS.md"
+t "T16 STRATEGY lane claim (LEDGER mutex)" 0 "$SCRIPT_DIR/register-thread.sh" "$L4/docs" plan1 T-100 --lane STRATEGY
+assert "T16a row has STRATEGY lane + LEDGER" grep -q '| plan1 |.*| STRATEGY | LEDGER |' "$L4/docs/THREADS.md"
+t "T16b DEPLOY lane claim (DEPLOY mutex)" 0 "$SCRIPT_DIR/register-thread.sh" "$L4/docs" dep1 T-101 --lane DEPLOY --model test-model
+assert "T16c row has DEPLOY lane + model" grep -q '| dep1 |.*| DEPLOY | DEPLOY |.*| test-model |' "$L4/docs/THREADS.md"
+t "T16d DOCS lane requires scope" 2 "$SCRIPT_DIR/register-thread.sh" "$L4/docs" doc1 T-102 --lane DOCS
+t "T16e bad lane refused" 2 "$SCRIPT_DIR/register-thread.sh" "$L4/docs" x1 T-102 --lane OPS
+t "T16f CODE-lane overlap still enforced (v4 row)" 1 "$SCRIPT_DIR/register-thread.sh" "$L4/docs" clash T-102 main "src/api/tasks.ts"
+t "T16g DEPLOY lane no-scope OK" 0 "$SCRIPT_DIR/register-thread.sh" "$L4/docs" dep2 T-103 --lane DEPLOY
+t "T16h validate-registry v4 passes" 0 "$SCRIPT_DIR/validate-registry.sh" "$L4/docs/THREADS.md"
+t "T16i check-stale parses v4" 0 "$SCRIPT_DIR/check-stale.sh" "$L4/docs/THREADS.md" --strict
+t "T16j --all parses v4 + mixed rows" 0 "$SCRIPT_DIR/check-scope-overlap.sh" "$L4/docs/THREADS.md" --all
+t "T16k heartbeat stamps v4 row" 0 "$SCRIPT_DIR/heartbeat.sh" "$L4/docs" plan1
+assert "T16l v4 heartbeat updated" grep -qE '\| plan1 \|.*\| 2026-09-0[23] [0-9:]+ \| ACTIVE \|' "$L4/docs/THREADS.md"
+t "T16m release on v4 registry" 0 "$SCRIPT_DIR/release-thread.sh" "$L4/docs" plan1 "strategy close"
+
+# v3→v4 in-passing upgrade E2E
+UP="$(new_fixture up4 no)"
+t "T17 claim upgrades v3 header to v4" 0 "$SCRIPT_DIR/register-thread.sh" "$UP/docs" up1 T-100 main "src/ui/"
+assert "T17a header now v4" grep -q '| Thread | Started | Tasks | Lane | Mutexes | Scope | Tree | Model | Heartbeat | Status |' "$UP/docs/THREADS.md"
+assert "T17b legacy v3 row intact" grep -q '| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |' "$UP/docs/THREADS.md"
+# legacy row still parseable by all consumers post-upgrade
+# refresh beta's heartbeat so staleness doesn't fire (this test checks parsing, not staleness)
+sed_inplace "s@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | $FRESH_NOW | T-999 | CODE | src/api/ | main | $FRESH_NOW | ACTIVE |@" "$UP/docs/THREADS.md"
+t "T17c check-stale on mixed post-upgrade" 0 "$SCRIPT_DIR/check-stale.sh" "$UP/docs/THREADS.md" --strict
+t "T17d --all on mixed post-upgrade" 0 "$SCRIPT_DIR/check-scope-overlap.sh" "$UP/docs/THREADS.md" --all
+
+# v2→v4 DIRECT upgrade (no v3 intermediate)
+UP2="$(new_fixture up2to4 no)"
+sed_inplace 's@| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |@| Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status |@' "$UP2/docs/THREADS.md"
+sed_inplace 's@|---|---|---|---|---|---|---|@|---|---|---|---|---|---|---|@' "$UP2/docs/THREADS.md"
+sed_inplace 's@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | 2026-09-02 09:00 | ACTIVE |@' "$UP2/docs/THREADS.md"
+t "T18 v2 claim upgrades DIRECTLY to v4" 0 "$SCRIPT_DIR/register-thread.sh" "$UP2/docs" v2c T-100 main "src/ui/"
+assert "T18a header is v4 (no v3 step)" grep -q '| Thread | Started | Tasks | Lane | Mutexes | Scope | Tree | Model | Heartbeat | Status |' "$UP2/docs/THREADS.md"
+assert "T18b v2 row intact" grep -q '| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | 2026-09-02 09:00 | ACTIVE |' "$UP2/docs/THREADS.md"
+t "T18c v2 overlap still enforced in v4 table" 1 "$SCRIPT_DIR/register-thread.sh" "$UP2/docs" clash T-101 main "src/api/tasks.ts"
+
+# deploy-handoff validator
+echo; echo "deploy handoff:"
+HOTMP="$(mktemp -d)"
+cat > "$HOTMP/full.md" <<'HOF'
+## Deploy Handoff — T-100 — payment retry fix
+
+1. PINNED SHA: abc123def456789012345678901234567890abcd
+   PUSHED: yes — VERIFIED HOW: remote ref match via git ls-remote
+
+2. TARGET: staging
+
+3. WHAT CHANGED: The payment retry loop counted abandoned attempts as
+failures. Retry state now resets on cancel.
+
+4. DB PREREQUISITES: none
+
+5. ENV / SECRETS CHANGES: none
+
+6. BUILD/CACHE STEPS BEYOND THE STANDARD CEREMONY: none
+
+7. SMOKE LIST:
+   - GET /checkout renders the retry banner (rendered content)
+   - login completes for a test account (behavior)
+
+8. ROLLBACK: PRIOR-GOOD SHA 999aaa888bbb —
+   STEPS: reset to prior sha, rebuild, re-run smoke 1
+
+9. GATE EVIDENCE: suite 148/150 · lint ✓ · build ✓
+
+10. URGENCY: routine
+HOF
+t "T19 full handoff passes" 0 "$SCRIPT_DIR/validate-deploy-handoff.sh" "$HOTMP/full.md"
+sed 's/^8\. ROLLBACK.*$//; s/^   STEPS:.*$//; s/suite 148\/150/pass locally/g' "$HOTMP/full.md" > "$HOTMP/bad.md"
+t "T19a missing rollback + evidence-without-numbers refused" 1 "$SCRIPT_DIR/validate-deploy-handoff.sh" "$HOTMP/bad.md"
+cat > "$HOTMP/em.md" <<'HOF'
+## Deploy Handoff — incident
+
+1. PINNED SHA: fff000111222 — VERIFIED HOW: remote ref match
+3. WHAT CHANGED: hotfix reverts the bad auth middleware commit.
+8. ROLLBACK: PRIOR-GOOD SHA 999aaa888 — STEPS: reset, rebuild, re-smoke.
+9. GATE EVIDENCE: suite 148/148 passing.
+HOF
+t "T19b emergency minimal passes" 0 "$SCRIPT_DIR/validate-deploy-handoff.sh" "$HOTMP/em.md" --emergency
+t "T19c emergency as full refused" 1 "$SCRIPT_DIR/validate-deploy-handoff.sh" "$HOTMP/em.md"
+t "T19d placeholder handoff refused" 1 "$SCRIPT_DIR/validate-deploy-handoff.sh" "$SCRIPT_DIR/../../docs/workflow/DEPLOY_HANDOFF_TEMPLATE.md"
+rm -rf "$HOTMP"
+
+# regression: header-based parsing — a future column addition must not
+# break consumers (simulate v5 column by hand-adding one; checkers must
+# still resolve Scope/Heartbeat/Status by name)
+echo; echo "future-column regression:"
+V5="$(new_fixture v5sim no)"
+sed_inplace 's@| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |@| Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Region | Status |@' "$V5/docs/THREADS.md"
+sed_inplace 's@|---|---|---|---|---|---|---|@|---|---|---|---|---|---|---|---|---|@' "$V5/docs/THREADS.md"
+sed_inplace "s@| beta | 2026-09-02 09:00 | T-999 | CODE | src/api/ | main | 2026-09-02 09:00 | ACTIVE |@| beta | $FRESH_NOW | T-999 | CODE | src/api/ | main | $FRESH_NOW | eu | ACTIVE |@" "$V5/docs/THREADS.md"
+t "T20 unknown extra column still parses (stale)" 0 "$SCRIPT_DIR/check-stale.sh" "$V5/docs/THREADS.md" --strict
+t "T20a extra column: overlap caught" 1 "$SCRIPT_DIR/check-scope-overlap.sh" "$V5/docs/THREADS.md" "src/api/tasks.ts"
+t "T20b extra column: disjoint clean" 0 "$SCRIPT_DIR/check-scope-overlap.sh" "$V5/docs/THREADS.md" "src/other.ts"
 
 # ================= SUMMARY =================
 echo; echo "----------------------------------------"

@@ -5,8 +5,8 @@
 <br>
 
 [![Release](https://img.shields.io/github/v/release/moiz-za/system-kit?label=release&color=success)](https://github.com/moiz-za/system-kit/releases)
-[[![Version](https://img.shields.io/badge/version-3.2.0-blue)](CHANGELOG.md)
-[![Tests](https://img.shields.io/badge/tests-53%2F53-brightgreen)](integrations/scripts/run-tests.sh)
+[[![Version](https://img.shields.io/badge/version-3.3.0-blue)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-84%2F84-brightgreen)](integrations/scripts/run-tests.sh)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/moiz-za/system-kit?style=social)](https://github.com/moiz-za/system-kit/stargazers)
 [![Discussions](https://img.shields.io/badge/GitHub-Discussions-blue?logo=github)](https://github.com/moiz-za/system-kit/discussions)
@@ -91,18 +91,39 @@ Every thread follows the same loop, enforced at three checkpoints:
 | **Commit** | Staged files inside the claimer's declared scope only | pre-commit hook (git projects); registry files always allowed |
 | **Merge** | One merge-back at a time; main tree never half-merged twice | `MERGE` mutex serializes all worktree/copy consolidations |
 
-### The four-mutex model
+### The five-mutex model
 
 | Mutex | Guards | Hold duration |
 |---|---|---|
 | `CODE` | A **declared scope** — parallel holders allowed iff scopes are disjoint | Task-long |
 | `LEDGER` | Shared tracking docs — append-only, registry-locked | Seconds per edit |
 | `DB-CF` | Database / cloud infrastructure | Action-long |
+| `DEPLOY` | All server execution — one deploy at a time, from complete handoffs only | One deployment |
 | `MERGE` | One merge-back of an isolated tree at a time | One merge |
 
 A global lock serializes everything behind the slowest thread. Scoped
 locks let the docs thread, the `src/api/` thread, and the `src/ui/`
 thread all run at once — because their scopes provably don't touch.
+
+### The four lanes
+
+Every thread declares a lane at claim time and never crosses it
+mid-task — the blast radius of any single agent is capped by design:
+
+| Lane | Does | Never does |
+|---|---|---|
+| `STRATEGY` | Plans, specs, research verdicts | Write code; touch any server |
+| `DOCS` | Content, drafts, ledger syncs | Write code; touch any server |
+| `CODE` | Code + full verification gate + push; files a **Deploy Handoff** at close-out | **Touch any server** |
+| `DEPLOY` | All server execution — from complete handoffs only, refuses incomplete ones | Write code; touch the working tree |
+
+The connective tissue is the **Deploy Handoff + refusal rule**: CODE
+threads file a 10-item handoff (pinned version, concrete smoke list,
+rollback that works, gate evidence with numbers); DEPLOY threads
+**refuse incomplete handoffs** — the party with the most to lose from
+a vague deploy is the one who must reject it. That's the entire trick.
+Projects without a deploy target keep the DEPLOY lane dormant; the
+system detects it at setup from existing answers — zero new questions.
 
 ### Isolation modes
 
@@ -140,19 +161,21 @@ what your machine supports. No configuration, no new questions.
 
 | Capability | How |
 |---|---|
-| Multi-thread coordination | Four-mutex model, scoped parallel CODE, live registry |
+| Multi-thread coordination | Five-mutex model, scoped parallel CODE, live registry |
+| Four-lane blast-radius control | STRATEGY/DOCS/CODE/DEPLOY declared at claim; CODE never touches servers; DEPLOY never writes code |
 | Machine-checked claims | Atomic register script — race-free, overlap-rejecting |
+| Deploy handoff + refusal rule | 10-item handoff, machine-validated; incomplete handoffs refused before anything deploys |
 | Commit-scope enforcement | Pre-commit hook (git); glob scopes (`src/**/*.test.ts`) enforced identically at claim, CI, and commit |
 | Stale-thread detection | `check-stale.sh` — abandoned claims can't hide |
 | Security posture | `check-security.sh` — credential + injection-marker scan; values never echoed |
-| One-command health | `governance-health.sh` — structure, registry, scope, stale, checkpoints, laws, security, buildlog |
+| One-command health | `governance-health.sh` — structure, registry, scope, stale, checkpoints, laws, security, deploy-queue linkage, buildlog |
 | Task queue with claim/lock/release | Single entry point + priority queue + dependency tracking |
 | Verification gates | Local-first, five-step order, owner verifies last |
 | Institutional memory | Append-only ledgers + checkpoint/resume |
 | Push discipline | Ledger currency required; owner-gated deployments |
 | Key isolation | Credentials handled internally, never exposed to agents |
 | Plain-language owner gate | Simple English decisions; owner interrupted only when necessary |
-| Universal deployment | Git or none, CI or none, any stack, any agent |
+| Universal deployment | Git or none, CI or none, deploy target or none, any stack, any agent |
 | Optional model rotation | Live probing for rotating free-tier catalogs |
 
 ## Patterns Included
@@ -171,6 +194,7 @@ Each pattern documents the real failure class it prevents:
 | [Context Window Management](patterns/context-window-management.md) | Decisions lost to context compaction |
 | [Worktree Parallel Coding](patterns/worktree-parallel.md) | Long code tasks queuing behind each other (git) |
 | [Folder-Copy Parallel Coding](patterns/folder-copy-parallel.md) | Long code tasks queuing behind each other (no git) |
+| [Four-Lane Threads](patterns/four-lane-threads.md) | One agent holding both the keyboard and the server keys |
 | [Non-VCS Mutex](patterns/non-vcs-mutex.md) | Losing concurrency guarantees without version control |
 
 ## Who It's For

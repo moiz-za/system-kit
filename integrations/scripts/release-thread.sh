@@ -3,12 +3,16 @@
 # release-thread.sh — atomic deregister + close-out for a registered thread.
 #
 # Under the REGISTRY lock:
-#   1. Verify clean tree (git main-tree mode only).
+#   1. Verify clean tree (git main-tree mode, CODE lane only).
 #   2. Isolated trees (worktree/copy): merge back under the MERGE mutex,
-#      then remove the tree.
+#      then remove the tree (heartbeat stamped post-merge so a long
+#      merge can never be reclaimed mid-close-out).
 #   3. Move the THREADS.md row Active -> Recently Completed.
 #   4. Flip TASKS.md CLAIMED -> DONE.
 #   5. Remove the .kit-thread identity file.
+#   6. CODE lane + deployable project: remind about the Deploy Handoff.
+#
+# Column-safe: all row fields resolved by HEADER NAME (v2/v3/v4).
 #
 # Usage:
 #   release-thread.sh <docs-folder> <thread-name> [summary]
@@ -21,6 +25,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/lib/registry-lock.sh"
+. "$SCRIPT_DIR/lib/registry-parse.sh"
 
 usage() {
   cat <<EOF
@@ -41,35 +46,31 @@ GITROOT="$(git -C "$PROJ" rev-parse --show-toplevel 2>/dev/null || true)"
 
 fail() { echo "REFUSED: $*"; exit 1; }
 
-# Extract own ACTIVE row: "tasks|tree"
-own_row() {
-  awk -F'|' -v name="$NAME" '
-    /^\|/ && !/\| *-+/ && !/Thread *\|/ {
-      rname = $2; gsub(/^[ \t]+|[ \t]+$/, "", rname)
-      if (rname != name) next
-      status = $(NF-1); gsub(/^[ \t]+|[ \t]+$/, "", status)
-      if (status != "ACTIVE") next
-      tasks = $4; gsub(/^[ \t]+|[ \t]+$/, "", tasks)
-      tree = (NF >= 10) ? $7 : "main"
-      gsub(/^[ \t]+|[ \t]+$/, "", tree)
-      if (tree == "") tree = "main"
-      print tasks "|" tree
-      exit
-    }' "$THREADS"
-}
-
 registry_acquire "$DOCS" REGISTRY || exit 1
 cleanup() { registry_release "$DOCS" REGISTRY; }
 trap cleanup EXIT
 
-INFO="$(own_row)"
-[ -n "$INFO" ] || fail "thread '$NAME' has no ACTIVE row in THREADS.md."
-TASK="${INFO%%|*}"; TREE="${INFO#*|}"
+registry_read "$(cat "$THREADS")"
 
-# Clean-tree handoff (git, main tree). Governance metadata and the
-# registry itself are always allowed untracked — threads are REQUIRED
-# to update THREADS.md/TASKS.md as part of close-out.
-if [ "$TREE" = "main" ] && [ -n "$GITROOT" ]; then
+# Find own ACTIVE row (header-name resolution)
+OWN_ROW=""; OWN_TASK=""; OWN_TREE="main"; OWN_LANE="CODE"
+while IFS= read -r r; do
+  [ -z "$r" ] && continue
+  if [ "$(registry_col "$r" Thread)" = "$NAME" ]; then
+    if [ "$(registry_col "$r" Status)" = "ACTIVE" ]; then
+      OWN_ROW="$r"
+      OWN_TASK="$(registry_col "$r" Tasks)"
+      OWN_TREE="$(registry_col "$r" Tree main)"
+      OWN_LANE="$(registry_col "$r" Lane CODE)"
+    fi
+  fi
+done < <(registry_rows)
+[ -n "$OWN_ROW" ] || fail "thread '$NAME' has no ACTIVE row in THREADS.md."
+
+# Clean-tree handoff (git, main tree, CODE lane only). Governance
+# metadata and the registry itself are always allowed untracked —
+# threads are REQUIRED to update THREADS.md/TASKS.md at close-out.
+if [ "$OWN_TREE" = "main" ] && [ "$OWN_LANE" = "CODE" ] && [ -n "$GITROOT" ]; then
   DIRTY="$(git -C "$GITROOT" status --porcelain 2>/dev/null | grep -vE '^\?\? (\.kit-thread|docs/\.locks/|docs/THREADS\.md|docs/workflow/)' || true)"
   if [ -n "$DIRTY" ]; then
     fail "working tree is dirty. Commit or stash before releasing CODE (clean-tree handoff)."
@@ -79,36 +80,31 @@ fi
 NOW="$(date '+%Y-%m-%d %H:%M')"
 
 # ---- Merge back isolated trees under MERGE ----
-if [ "$TREE" != "main" ] && [ -d "$TREE" ]; then
+if [ "$OWN_TREE" != "main" ] && [ -d "$OWN_TREE" ]; then
   registry_acquire "$DOCS" MERGE || fail "MERGE mutex busy — another merge in flight. Retry shortly."
-  if [ -n "$GITROOT" ] && [ -d "$TREE/.git" ]; then
-    # git worktree: merge its branch back into the main tree
-    BRANCH="kit/$TASK-$NAME"
+  if [ -n "$GITROOT" ] && [ -d "$OWN_TREE/.git" ]; then
+    BRANCH="kit/$OWN_TASK-$NAME"
     if git -C "$GITROOT" show-ref --verify --quiet "refs/heads/$BRANCH" 2>/dev/null; then
       if ! git -C "$GITROOT" merge "$BRANCH" --no-edit >/dev/null 2>&1; then
         registry_release "$DOCS" MERGE
         fail "merge of '$BRANCH' had conflicts. Resolve in the repo, then re-run release."
       fi
     fi
-    # worktree remove refuses when untracked files exist (e.g. .kit-thread)
-    rm -f "$TREE/.kit-thread" 2>/dev/null || true
-    git -C "$GITROOT" worktree remove "$TREE" >/dev/null 2>&1 || rm -rf "$TREE"
+    rm -f "$OWN_TREE/.kit-thread" 2>/dev/null || true
+    git -C "$GITROOT" worktree remove "$OWN_TREE" >/dev/null 2>&1 || rm -rf "$OWN_TREE"
   else
-    # folder-copy merge-back: copy every file that differs from main
-    echo "MERGE: copying back changed files from '$TREE'..."
-    ( cd "$TREE" && find . -type f ! -path './.kit-thread' ! -path './.git/*' ) 2>/dev/null \
+    echo "MERGE: copying back changed files from '$OWN_TREE'..."
+    ( cd "$OWN_TREE" && find . -type f ! -path './.kit-thread' ! -path './.git/*' ) 2>/dev/null \
       | while IFS= read -r f; do
       f="${f#./}"
-      if [ ! -f "$PROJ/$f" ] || ! cmp -s "$TREE/$f" "$PROJ/$f"; then
+      if [ ! -f "$PROJ/$f" ] || ! cmp -s "$OWN_TREE/$f" "$PROJ/$f"; then
         mkdir -p "$PROJ/$(dirname "$f")"
-        cp "$TREE/$f" "$PROJ/$f" && echo "  merged: $f"
+        cp "$OWN_TREE/$f" "$PROJ/$f" && echo "  merged: $f"
       fi
     done
-    rm -rf "$TREE"
+    rm -rf "$OWN_TREE"
   fi
-  # A merge under MERGE proves liveness — stamp it into the row's
-  # heartbeat so the thread cannot be reclaimed mid-close-out even if
-  # the merge took longer than the staleness threshold.
+  # merge proves liveness — stamp it so a long merge can't be reclaimed
   if [ -f "$SCRIPT_DIR/heartbeat.sh" ]; then
     "$SCRIPT_DIR/heartbeat.sh" "$DOCS" "$NAME" >/dev/null 2>&1 || true
   fi
@@ -116,8 +112,6 @@ if [ "$TREE" != "main" ] && [ -d "$TREE" ]; then
 fi
 
 # ---- Move row Active -> Recently Completed ----
-# Ensure a Recently Completed section exists (append one if missing so
-# close-out never fails on a hand-trimmed registry).
 if ! grep -q '^## Recently Completed' "$THREADS"; then
   printf '\n## Recently Completed\n\n| Thread | Ended | Summary |\n|---|---|---|\n' >> "$THREADS"
 fi
@@ -144,19 +138,25 @@ else
   fail "could not write Recently Completed entry (format not recognized)."
 fi
 
-# ---- Flip TASKS.md CLAIMED -> DONE ----
-if [ -f "$TASKS" ] && [ -n "$TASK" ]; then
-  sed "s@CLAIMED($NAME)@DONE@" "$TASKS" > "$TASKS.new" && mv "$TASKS.new" "$TASKS"
+# ---- Flip TASKS.md CLAIMED -> DONE (escape sed metacharacters) ----
+if [ -f "$TASKS" ] && [ -n "$OWN_TASK" ]; then
+  ESC_NAME="$(printf '%s' "$NAME" | sed 's/[][\.*^$\/]/\\&/g')"
+  sed "s@CLAIMED($ESC_NAME)@DONE@" "$TASKS" > "$TASKS.new" && mv "$TASKS.new" "$TASKS"
 fi
 
 # ---- Remove identity file ----
-for f in "$GITROOT/.kit-thread" "$DOCS/.kit-thread" "$TREE/.kit-thread"; do
+for f in "$GITROOT/.kit-thread" "$DOCS/.kit-thread" "$OWN_TREE/.kit-thread"; do
   rm -f "$f" 2>/dev/null || true
 done
 
 registry_release "$DOCS" REGISTRY
 trap - EXIT
 
-echo "RELEASED: $NAME — task $TASK DONE, moved to Recently Completed."
+echo "RELEASED: $NAME — task $OWN_TASK DONE, moved to Recently Completed."
+if [ "$OWN_LANE" = "CODE" ] && [ -f "$DOCS/workflow/DEPLOY_QUEUE.md" ]; then
+  echo "  DEPLOY LANE: file a Deploy Handoff"
+  echo "  (workflow/DEPLOY_HANDOFF_TEMPLATE.md) and add the queue entry —"
+  echo "  the deploy thread refuses incomplete handoffs."
+fi
 echo "  Remaining close-out: BUILDLOG entry + PENDING-OWNER update if needed."
 exit 0

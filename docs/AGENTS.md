@@ -43,11 +43,26 @@
 ### Thread Registration
 Every thread registers before touching files — through the claim script
 (`register-thread.sh`) when available, or manually following the same rules.
-Registration includes: thread name · task claimed · scope · mode (main /
-worktree / copy) · mutexes held · heartbeat.
+Registration includes: thread name · task claimed · lane · scope · mode
+(main / worktree / copy) · mutexes held · heartbeat.
+
+### The Four Lanes
+Threads declare a **lane** at claim time and never cross it mid-task
+(finish + close out + a new claim instead):
+
+| Lane | Does | Never does |
+|---|---|---|
+| **STRATEGY** | Plans, specs, research verdicts, decision framing | Write code; touch any server; push |
+| **DOCS** | Content, drafts, ledger syncs, handoff documents | Write code; touch any server; push |
+| **CODE** | Write/fix/debug; full verification gate (real-browser pass for UI); commit + push per project push law; files a Deploy Handoff at close-out | **Touch any server** — no deploy of any kind |
+| **DEPLOY** | All server execution, from complete handoffs only; refuses incomplete ones; records every deploy | Write code; touch the working tree's git |
+
+The lane sets the mutex automatically (STRATEGY/DOCS → LEDGER,
+CODE → CODE, DEPLOY → DEPLOY). The **Model** column in the registry is
+observability only — never a gate or a law; lineups are swappable.
 
 ### Mutexes
-Four locks prevent collisions between parallel threads:
+Five locks prevent collisions between parallel threads:
 - **CODE**: exclusive write to a **declared scope** (one or more files/dirs).
   Multiple threads may hold CODE simultaneously **iff their scopes are
   disjoint** — machine-verified at claim time and at commit time (git hook).
@@ -56,6 +71,14 @@ Four locks prevent collisions between parallel threads:
   Every shared-ledger read-modify-write happens under the REGISTRY
   filesystem lock — parallel appends can never clobber rows.
 - **DB-CF**: database/schema/cloud-infrastructure changes (action-long).
+  Destructive DB changes are owner-approved and owner-executed.
+- **DEPLOY**: all server execution — exclusive while held. The push/deploy
+  split: CODE threads push and stop; deployment of the pinned version is
+  the DEPLOY holder's job, executed from a complete handoff only.
+  Production deploys need the owner's explicit word; staging/test
+  environments are agent-executable. Emergency path (prod incidents):
+  owner word + minimal handoff (version, evidence with numbers,
+  what-changed, rollback); full form within 24h.
 - **MERGE**: serializes merge-backs of isolated trees (worktrees and
   folder-copies) so the main tree is never in two half-merged states.
 

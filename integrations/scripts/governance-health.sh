@@ -136,6 +136,36 @@ else
   report fail laws "AGENTS.md missing"
 fi
 
+# --- deploy queue linkage (four-lane projects with a deploy target) ---
+QUEUE="$DOCS/workflow/DEPLOY_QUEUE.md"
+if [ -f "$QUEUE" ]; then
+  Q_OK="yes"; Q_ISSUES=""
+  while IFS= read -r entry; do
+    [ -z "$entry" ] && continue
+    case "$entry" in
+      "|"*"|"*) ;;  # only table rows
+      *) continue ;;
+    esac
+    printf '%s' "$entry" | grep -qE '^\| *#|^\| *-+' && continue
+    # pending/waiting queue entries must reference a handoff that exists
+    if printf '%s' "$entry" | grep -qiE 'pending|awaiting|waiting|queued'; then
+      ho_ref="$(printf '%s' "$entry" | grep -oE '[A-Za-z0-9_/.-]*HANDOFF[A-Za-z0-9_/.-]*|[A-Za-z0-9_/.-]*handoff[A-Za-z0-9_/.-]*' | head -1)"
+      found="no"
+      if [ -n "$ho_ref" ] && [ -f "$DOCS/workflow/$ho_ref" ]; then found="yes"; fi
+      if [ "$found" = "no" ]; then
+        Q_OK="no"
+        Q_ISSUES="$Q_ISSUES queue entry without a resolvable handoff file"
+        break
+      fi
+    fi
+  done < "$QUEUE"
+  if [ "$Q_OK" = "yes" ]; then
+    report pass deploy-queue "queue entries reference existing handoffs"
+  else
+    report fail deploy-queue "$Q_ISSUES"
+  fi
+fi
+
 # --- security posture ---
 PROJ="$(cd "$DOCS/.." 2>/dev/null && pwd || echo "$DOCS")"
 if [ -f "$SCRIPT_DIR/check-security.sh" ]; then

@@ -8,6 +8,9 @@
 # use this script for long work between commits or in filesystem-only
 # mode.
 #
+# Column-safe: resolves the Heartbeat column by HEADER NAME (works on
+# v2/v3/v4 registries; never writes the wrong column).
+#
 # Usage:
 #   heartbeat.sh <docs-folder> <thread-name>
 #
@@ -19,6 +22,7 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/lib/registry-lock.sh"
+. "$SCRIPT_DIR/lib/registry-parse.sh"
 
 [ "$#" -eq 2 ] || { echo "Usage: $0 <docs-folder> <thread-name>"; exit 2; }
 
@@ -30,24 +34,40 @@ registry_acquire "$DOCS" REGISTRY || exit 1
 cleanup() { registry_release "$DOCS" REGISTRY; }
 trap cleanup EXIT
 
+registry_read "$(cat "$THREADS")"
+
+# Resolve the Heartbeat column index from the header by name; if the
+# header lacks it (ancient hand-made tables), fall back to the field
+# before Status.
+HB_IDX="$(printf '%s' "$REG_HEADER" | awk -F'|' '
+  { for (i = 1; i <= NF; i++) { v = $i; gsub(/^[ \t]+|[ \t]+$/, "", v)
+      if (v == "Heartbeat") { print i; exit } } }')"
+[ -z "$HB_IDX" ] && HB_IDX="AUTO"
+
 NOW="$(date '+%Y-%m-%d %H:%M')"
 
-# Replace own row's Heartbeat field.
-# New format (NF>=10): Heartbeat = $8  ·  Old format (NF=9): Heartbeat = $7
 TMP="$THREADS.tmp"
-awk -F'|' -v name="$NAME" -v now="$NOW" '
+awk -v name="$NAME" -v now="$NOW" -v hb_idx="$HB_IDX" '
   BEGIN { OFS = "|" }
-  NF < 3 { print; next }  # non-table lines pass through untouched
-  {
-    rname = $2
-    if (rname != "") { gsub(/^[ \t]+|[ \t]+$/, "", rname) }
-    status = $(NF-1); gsub(/^[ \t]+|[ \t]+$/, "", status)
+  /^## Active Threads/ { in_active = 1; print; next }
+  in_active && /^## / && !/^## Active Threads/ { in_active = 0; print; next }
+  in_active && (/^\| *Thread/ || /^\| *-+/) { print; next }
+  in_active && /^\|/ {
+    n = split($0, f, "|")
+    rname = f[2]; gsub(/^[ \t]+|[ \t]+$/, "", rname)
+    status = f[n-1]; gsub(/^[ \t]+|[ \t]+$/, "", status)
     if (rname == name && status == "ACTIVE") {
-      if (NF >= 10) { $8 = " " now " " } else { $7 = " " now " " }
+      idx = (hb_idx == "AUTO") ? (n - 2) : hb_idx + 0
+      f[idx] = " " now " "
+      line = ""
+      for (i = 1; i <= n; i++) line = line (i > 1 ? "|" : "") f[i]
+      print line
       found = 1
+      next
     }
-    print
+    print; next
   }
+  { print }
   END { exit (found ? 0 : 1) }
 ' "$THREADS" > "$TMP"
 

@@ -12,9 +12,9 @@
 # CI mode (--all): verify no two ACTIVE threads' main-tree scopes
 # overlap — the machine-checked parallel-safety gate.
 #
-# Supports BOTH table formats:
-#   New (v3): | Thread | Started | Tasks | Mutexes | Scope | Tree | Heartbeat | Status |
-#   Old (v2): | Thread | Started | Tasks | Mutexes | Shared Files | Heartbeat | Status |
+# Column-safe: resolves Thread/Scope/Tree/Status by HEADER NAME via
+# lib/registry-parse.sh — works on v2/v3/v4 registries (and any future
+# column addition) without positional changes.
 # Isolated-tree rows (worktree/copy) are excluded from main-tree
 # conflict checks — their edits live in separate trees until merge.
 #
@@ -26,6 +26,12 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -f "$SCRIPT_DIR/lib/scope-match.sh" ] && . "$SCRIPT_DIR/lib/scope-match.sh"
+if [ -f "$SCRIPT_DIR/lib/registry-parse.sh" ]; then
+  . "$SCRIPT_DIR/lib/registry-parse.sh"
+  PARSE_LIB="yes"
+else
+  PARSE_LIB="no"
+fi
 
 usage() {
   cat <<EOF
@@ -46,21 +52,35 @@ THREADS_FILE="$1"; shift
 
 [ -f "$THREADS_FILE" ] || { echo "ERROR: THREADS.md not found at '$THREADS_FILE'"; exit 2; }
 
-# Extract ACTIVE rows as "name|scope|tree" (layout-agnostic via NF).
-# New-format rows have NF=10 (trailing empty field after final pipe);
-# old-format rows have NF=9. Tree exists only in new format.
+# Extract ACTIVE rows as "name|scope|tree" — universal resolution:
+# header-matching rows by header name, legacy rows (count predating
+# the header) by their own known layout. Never skipped — a legacy scope
+# that escapes checking is a collision hole.
 get_active() {
-  awk -F'|' '
-    /^\|/ && !/\| *-+/ && !/Thread *\|/ {
-      status = $(NF-1); gsub(/^[ \t]+|[ \t]+$/, "", status)
-      if (status != "ACTIVE") next
-      name = $2; gsub(/^[ \t]+|[ \t]+$/, "", name)
-      scope = $6; gsub(/^[ \t]+|[ \t]+$/, "", scope)
-      tree = (NF >= 10) ? $7 : "main"
-      gsub(/^[ \t]+|[ \t]+$/, "", tree)
-      if (tree == "") tree = "main"
-      print name "|" scope "|" tree
-    }' "$THREADS_FILE"
+  if [ "$PARSE_LIB" = "yes" ]; then
+    registry_read "$(cat "$THREADS_FILE")"
+    local r
+    while IFS= read -r r; do
+      [ -z "$r" ] && continue
+      [ "$(registry_col_any "$r" Status "")" = "ACTIVE" ] || continue
+      printf '%s|%s|%s\n' \
+        "$(registry_col_any "$r" Thread "?")" \
+        "$(registry_col_any "$r" Scope "")" \
+        "$(registry_col_any "$r" Tree main)"
+    done < <(registry_rows)
+  else
+    awk -F'|' '
+      /^\|/ && !/\| *-+/ && !/Thread *\|/ {
+        status = $(NF-1); gsub(/^[ \t]+|[ \t]+$/, "", status)
+        if (status != "ACTIVE") next
+        name = $2; gsub(/^[ \t]+|[ \t]+$/, "", name)
+        scope = $6; gsub(/^[ \t]+|[ \t]+$/, "", scope)
+        tree = (NF >= 10) ? $7 : "main"
+        gsub(/^[ \t]+|[ \t]+$/, "", tree)
+        if (tree == "") tree = "main"
+        print name "|" scope "|" tree
+      }' "$THREADS_FILE"
+  fi
 }
 
 overlap() { # $1 claimed path, $2 owner path (dirs end with /; globs supported)

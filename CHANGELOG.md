@@ -3,6 +3,67 @@
 All notable changes to System Kit are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.3.0] — 2026-09-03
+
+### Added
+
+- **Four-lane thread system** — STRATEGY / DOCS / CODE / DEPLOY lanes,
+  declared at claim time and never crossed mid-task. CODE threads write
+  code, verify, push — and never touch a server. DEPLOY threads execute
+  all server work from complete handoffs only. Lanes set the mutex
+  automatically; the lane × scope × isolation-mode dimensions compose.
+  New pattern: `patterns/four-lane-threads.md`.
+- **DEPLOY mutex (five-mutex model)** — all server execution, one deploy
+  at a time. Production deploys owner-gated; staging agent-executable;
+  emergency path (owner word + minimal handoff; full form within 24h).
+- **Deploy Handoff + refusal rule** — mandatory 10-item CODE close-out
+  form (`workflow/DEPLOY_HANDOFF_TEMPLATE.md`): pinned version with
+  verified-how, target, plain-English what-changed written for a
+  stranger, DB/env prerequisites, build steps, concrete smoke list with
+  rendered-content checks, working rollback, gate evidence WITH NUMBERS,
+  urgency. DEPLOY threads refuse incomplete handoffs — machine-checked by
+  the new `validate-deploy-handoff.sh` (full + emergency-minimal modes).
+- **DEPLOY_QUEUE.md** — the deploy lane's entry point (its START_HERE
+  equivalent): iron rules, queue table, generic ceremony spine with the
+  project's concrete deploy method filled at setup.
+- **`--lane` / `--model` claim flags** — `register-thread.sh` accepts
+  lane (mutex auto-assigned; scope required for CODE/DOCS) and a free-form
+  model observability label (never a gate or law). DEPLOY claims are
+  pointed at the queue; CODE close-outs reminded of the handoff.
+- **Registry format v4** — Lane + Model columns. v2/v3 registries upgrade
+  to v4 in passing on the next claim (direct v2→v4, no intermediate).
+- **Setup detection: deploy target** — the capability table now detects a
+  deploy target from existing owner answers (zero new questions):
+  deployable projects get the queue + handoff templates with the concrete
+  deploy method; others keep DEPLOY documented as dormant.
+
+### Fixed (found by the pre-port bug audit)
+
+- **Column-resolution landmine (critical)** — all six registry-parsing
+  scripts detected format by counting pipe fields (`NF >= 10`), which
+  silently read the WRONG columns on any format change (a heartbeat
+  written into Tree, scope read from Mutexes). New shared library
+  `lib/registry-parse.sh`: columns resolve by HEADER NAME, legacy rows by
+  their own known layout, unknown future layouts by stable positions
+  (Thread/Status). A registry column addition can no longer break any
+  consumer — proven by a regression test (T20) simulating a future column.
+- `release-thread.sh`/`register-thread.sh` sed metacharacter escaping in
+  thread names (CLAIMED flip).
+- `check-scope-overlap.sh` claim-mode positional "luck" (Scope@6 was
+  coincidence between two formats) — now header-resolved.
+
+### Changed
+
+- Test harness grew to **84 checks** (+31): four-lane claims and mutex
+  assignment, v4 parsing across every consumer, v3→v4 and v2→v4 upgrade
+  E2E, handoff validator (full/incomplete/emergency/placeholder),
+  lane-scoped rules, future-column regression.
+- `governance-health.sh` — deploy-queue handoff-linkage check (pending
+  queue entries must reference existing handoffs).
+- README: five-mutex table, four-lane table, handoff/refusal explainer,
+  capability rows; docs (THREADS/AGENTS/START_HERE/AGENT_BRIEF/
+  TEAM_ONBOARDING) updated to the lane system.
+
 ## [3.2.0] — 2026-09-02
 
 ### Added

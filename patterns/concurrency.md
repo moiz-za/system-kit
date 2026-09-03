@@ -1,13 +1,14 @@
 # Concurrency Protocol — Reference Pattern
 
 > Prevents parallel agent threads from colliding. Proven across 26+
-> concurrent sessions with zero code collisions; v3 adds machine-checked
-> claims, scope-scoped CODE, and isolation modes so parallel work no
-> longer queues behind a single global lock.
+> concurrent sessions with zero code collisions; v3 added machine-checked
+> claims, scope-scoped CODE, and isolation modes; the four-lane extension
+> adds the DEPLOY mutex and the code/deploy blast-radius split — see
+> [Four-Lane Threads](four-lane-threads.md).
 
 ---
 
-## The Four-Mutex Model
+## The Five-Mutex Model
 
 Most projects need exactly these locks. More can be added per domain.
 
@@ -53,6 +54,15 @@ Serializes merge-backs of isolated trees (worktrees, folder-copies) so the
 main tree is never in two half-merged states at once.
 
 **Hold duration:** one merge
+
+### DEPLOY
+All server execution — one deploy at a time, exclusive while held. The
+CODE lane pushes and stops; the DEPLOY lane executes the pinned version
+from a complete handoff only (refusal rule). Production deploys are
+owner-gated; staging/test are agent-executable. See
+[Four-Lane Threads](four-lane-threads.md).
+
+**Hold duration:** one deployment
 
 ## Atomic claims — the registry lock
 

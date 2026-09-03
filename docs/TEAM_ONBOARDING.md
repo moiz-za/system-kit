@@ -13,17 +13,21 @@
 
 Default in solo projects: Owner = Operator = the same person.
 
-## Who can claim CODE vs LEDGER vs DB-CF
+## Who can claim which lane / mutex
 
-- **LEDGER** — anyone. Brief holds (seconds per edit, under the REGISTRY
-  lock) are routine.
-- **CODE** — Operator or Owner, to a **declared scope**. Parallel CODE
-  claims are fine when scopes are disjoint — the claim script verifies
-  this; when in doubt, or for long tasks, use an isolated mode
-  (worktree with git, folder-copy without).
+- **LEDGER** (STRATEGY / DOCS lanes) — anyone. Brief holds (seconds per
+  edit, under the REGISTRY lock) are routine.
+- **CODE** (CODE lane) — Operator or Owner, to a **declared scope**.
+  Parallel CODE claims are fine when scopes are disjoint — the claim
+  script verifies this; when in doubt, or for long tasks, use an
+  isolated mode (worktree with git, folder-copy without).
 - **DB-CF** — Owner only, by default. Migrations and infrastructure
   changes are risky enough that one person should hold this account.
   A more mature team can extend DB-CF to specific Operators.
+- **DEPLOY** (DEPLOY lane) — Owner or an explicitly trusted Operator
+  only: the lane executes on servers. It works exclusively from
+  complete Deploy Handoffs and refuses incomplete ones; production
+  deploys always need the owner's explicit word.
 
 ## How a new teammate joins
 

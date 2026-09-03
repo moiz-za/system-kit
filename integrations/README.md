@@ -11,27 +11,31 @@
 | File | What it does |
 |---|---|
 | [`scripts/lib/registry-lock.sh`](scripts/lib/registry-lock.sh) | Shared noclobber filesystem lock — the atomicity primitive |
+| [`scripts/lib/registry-parse.sh`](scripts/lib/registry-parse.sh) | Shared THREADS.md parser — columns resolve by HEADER NAME (v2/v3/v4 + future-column safe); legacy rows by their own layout |
 | [`scripts/lib/scope-match.sh`](scripts/lib/scope-match.sh) | Shared scope matcher (dirs, exact files, globs) — one enforcement answer at claim, CI, and commit time |
-| [`scripts/register-thread.sh`](scripts/register-thread.sh) | THE atomic claim: lock → uniqueness → scope-disjoint check → row insert → task flip → identity file. Worktree/copy isolation modes built in; upgrades pre-v3 registries in passing |
-| [`scripts/release-thread.sh`](scripts/release-thread.sh) | Atomic close-out: clean-tree check, MERGE-guarded merge-back (with heartbeat stamp so mid-merge threads can't be reclaimed), row → Recently Completed, task DONE |
-| [`scripts/heartbeat.sh`](scripts/heartbeat.sh) | Stamp your THREADS.md row (commits count as heartbeats in git mode) |
+| [`scripts/register-thread.sh`](scripts/register-thread.sh) | THE atomic claim: lock → uniqueness → scope-disjoint check → row insert → task flip → identity file. `--lane STRATEGY/DOCS/CODE/DEPLOY` (mutex auto-assigned), `--model` observability label, worktree/copy isolation, in-passing registry upgrades to the current format |
+| [`scripts/release-thread.sh`](scripts/release-thread.sh) | Atomic close-out: clean-tree check, MERGE-guarded merge-back (heartbeat stamped mid-merge), row → Recently Completed, task DONE, deploy-handoff reminder for CODE lane |
+| [`scripts/heartbeat.sh`](scripts/heartbeat.sh) | Stamp your THREADS.md row (column-safe by header name; commits count as heartbeats in git mode) |
 | [`scripts/pre-commit-scope-check.sh`](scripts/pre-commit-scope-check.sh) | Git hook: rejects commits outside the thread's declared scope; registry files always allowed |
-| [`scripts/check-scope-overlap.sh`](scripts/check-scope-overlap.sh) | Claim-mode overlap check + `--all` pairwise CI gate; supports old and new THREADS.md formats and globs |
-| [`scripts/check-stale.sh`](scripts/check-stale.sh) | Flags ACTIVE threads with no heartbeat for 2h+ (configurable via `KIT_STALE_HOURS`); `--strict` exits 1 for CI/claim guards; supports both table formats |
-| [`scripts/validate-registry.sh`](scripts/validate-registry.sh) | THREADS.md format validation: sections, column counts, required fields, known statuses, duplicate ACTIVE names, heartbeat format |
+| [`scripts/check-scope-overlap.sh`](scripts/check-scope-overlap.sh) | Claim-mode overlap check + `--all` pairwise CI gate; header-safe across formats and globs |
+| [`scripts/check-stale.sh`](scripts/check-stale.sh) | Flags ACTIVE threads with no heartbeat for 2h+ (configurable via `KIT_STALE_HOURS`); `--strict` exits 1 for CI/claim guards; both table formats |
+| [`scripts/validate-registry.sh`](scripts/validate-registry.sh) | THREADS.md format validation: sections, column counts vs the header, required fields, known statuses, lane values, duplicate ACTIVE names, heartbeat format |
+| [`scripts/validate-deploy-handoff.sh`](scripts/validate-deploy-handoff.sh) | The refusal rule, machine-checked: full 10-item handoff or emergency-minimal set; refuses unfilled sections, gate evidence without numbers, unverified pushes |
 | [`scripts/check-buildlog.sh`](scripts/check-buildlog.sh) | Git-only: fails when a commit range removed or modified existing BUILDLOG entries (append-only discipline) |
-| [`scripts/check-security.sh`](scripts/check-security.sh) | Security posture scan: high-confidence credential patterns, prompt-injection markers, untracked secret stores. Reports file:line only — values never echoed. Exceptions via `.kit-security-allowlist` (one path per line) for files whose job is to document such patterns |
-| [`scripts/governance-health.sh`](scripts/governance-health.sh) | One command, full sweep: structure + registry + scope + stale + checkpoints + laws + security + buildlog, with a pass/warn/fail score |
+| [`scripts/check-security.sh`](scripts/check-security.sh) | Security posture scan: high-confidence credential patterns, prompt-injection markers, untracked secret stores. Reports file:line only — values never echoed. Exceptions via `.kit-security-allowlist` |
+| [`scripts/governance-health.sh`](scripts/governance-health.sh) | One command, full sweep: structure + registry + scope + stale + checkpoints + laws + security + deploy-queue linkage + buildlog, with a pass/warn/fail score |
 | [`scripts/validate-checkpoint.sh`](scripts/validate-checkpoint.sh) | Fails push if any in-progress checkpoint is incomplete |
-| [`scripts/run-tests.sh`](scripts/run-tests.sh) | Zero-dependency test harness — simulates parallel sessions in filesystem and git modes (53 checks) |
-| [`governance-check.yml`](governance-check.yml) | GitHub Actions PR gate: link integrity, placeholders, version, registry presence + format, pairwise scope, stale, BUILDLOG append-only, checkpoints |
+| [`scripts/run-tests.sh`](scripts/run-tests.sh) | Zero-dependency test harness — simulates parallel sessions in filesystem and git modes, four lanes, v4 upgrades, handoffs (84 checks) |
+| [`governance-check.yml`](governance-check.yml) | GitHub Actions PR gate: link integrity, placeholders, version, registry presence + format, pairwise scope, stale, security, BUILDLOG append-only, checkpoints |
 | [`governance-watch.yml`](governance-watch.yml) | Optional daily watchdog: opens/updates ONE GitHub issue when governance needs attention |
 
 ## The thread lifecycle with scripts
 
 ```bash
-# claim (atomic — racing claims: exactly one wins)
-./integrations/scripts/register-thread.sh docs alpha T-041 main src/api/
+# claim (atomic — racing claims: exactly one wins; lane sets the mutex)
+./integrations/scripts/register-thread.sh docs alpha T-041 --lane CODE main src/api/
+./integrations/scripts/register-thread.sh docs plan1 T-050 --lane STRATEGY
+./integrations/scripts/register-thread.sh docs dep1 T-060 --lane DEPLOY --model m2
 
 # long code task needing isolation:
 ./integrations/scripts/register-thread.sh docs beta T-042 worktree src/api/

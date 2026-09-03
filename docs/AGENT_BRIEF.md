@@ -11,13 +11,16 @@ Its single job: prevent agents from colliding, losing work, or shipping untested
 
 1. **Read** `docs/START_HERE.md`
 2. **Claim** your task atomically:
-   `register-thread.sh <docs-folder> <thread> <task-id> <mode> <scope...>`
+   `register-thread.sh <docs-folder> <thread> <task-id> [--lane LANE] [mode] [scope...]`
    — scope must be disjoint from every ACTIVE main-tree thread (the script
-   verifies this; your claim is refused on overlap)
+   verifies this; your claim is refused on overlap). Pick your lane:
+   STRATEGY (plans) · DOCS (content) · CODE (default) · DEPLOY (servers,
+   from complete handoffs only)
 3. **Work.** Stay inside your declared scope. Long code task? Use an
    isolated mode — `worktree` (git) or `copy` (no git).
 4. **Close out.** `release-thread.sh <docs-folder> <thread> "<summary>"`,
    then update `docs/workflow/BUILDLOG.md` and `docs/workflow/PENDING-OWNER.md`.
+   CODE lane on a deployable project? File the Deploy Handoff first.
 
 ## The three laws that cannot be broken
 

@@ -5,3 +5,4 @@ patterns/prompt-injection-defense.md
 patterns/security-checklist.md
 SETUP_PROMPT.md
 integrations/scripts/run-tests.sh
+integrations/scripts/check-security.sh
